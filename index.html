@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebM Video Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #videoPlayer {
+            margin-top: 20px;
+            max-width: 100%;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebM Video Player</h1>
+        <button id="playButton">Play 3 Stooges Video</button>
+        <video id="videoPlayer" controls></video>
+    </div>
+
+    <script>
+        document.getElementById('playButton').addEventListener('click', function() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            // Change this path to match the location of your WebM file
+            const webmFilePath = 'https://dn721806.ca.archive.org/0/items/have-rocket-will-travel-colorized/Have%20Rocket-Will%20Travel.mp4';
+            
+            videoPlayer.src = webmFilePath;
+            videoPlayer.style.display = 'block';
+            videoPlayer.play();
+        });
+    </script>
+</body>
+</html>
