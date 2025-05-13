@@ -3,702 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car vs Clown Platform Game</title>
+    <title>Keyboard Event Tester for Xbox</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #87CEEB;
             font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
         }
-        #gameContainer { position: relative; width: 800px; height: 400px; margin: 20px auto; }
-        #gameCanvas { background-color: #87CEEB; border: 2px solid #000; }
-        .health-bar {
-            height: 20px; width: 300px; background: #ccc; 
-            position: relative; margin: 10px; display: inline-block;
+        h1 {
+            color: #107C10;
+            text-align: center;
         }
-        .health-bar-fill {
-            height: 100%; background: #4CAF50; transition: width 0.2s ease;
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .health-label {
-            position: absolute; top: 0; left: 0; right: 0;
-            text-align: center; color: white; text-shadow: 1px 1px 1px #000;
-        }
-        #healthBars, #instructions { text-align: center; margin: 10px; }
-        #gameOverScreen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); color: white;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-        }
-        #gameOverScreen button {
-            margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer;
-        }
-        #controls { margin-top: 10px; text-align: center; }
-        #dpad {
-            position: relative; width: 150px; height: 150px; margin: 10px auto;
-        }
-        .dpad-button {
-            position: absolute; width: 50px; height: 50px; background-color: #444;
-            color: white; display: flex; justify-content: center; align-items: center;
-            font-size: 24px; user-select: none; cursor: pointer; border-radius: 5px;
-        }
-        #dpad-up { top: 0; left: 50px; }
-        #dpad-left { top: 50px; left: 0; }
-        #dpad-right { top: 50px; left: 100px; }
-        #dpad-down { top: 100px; left: 50px; }
-        .action-buttons {
-            display: flex; justify-content: center; gap: 10px; margin-top: 10px;
-        }
-        .action-button {
-            width: 50px; height: 50px; color: white; display: flex;
-            justify-content: center; align-items: center; font-size: 24px;
-            user-select: none; cursor: pointer; border-radius: 25px;
-        }
-        #button-enter { background-color: #4CAF50; }
-        #button-x { background-color: #2196F3; }
-        #controller-layout {
-            width: 400px;
-            margin: 10px auto;
+        .event-log {
+            margin-top: 20px;
             padding: 10px;
-            border: 1px solid #333;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-        }
-        .button-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .controller-button {
-            padding: 5px;
-            background-color: #ddd;
-            border: 1px solid #999;
-            border-radius: 3px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .keyboard-key {
-            font-weight: bold;
             background-color: #eee;
-            padding: 2px 5px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .input-area {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            border: 2px solid #107C10;
+            text-align: center;
+        }
+        .input-area:focus {
+            outline: none;
+            border-color: #0e5e0e;
+        }
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-left: 4px solid #107C10;
+            border-radius: 2px;
+        }
+        button {
+            background-color: #107C10;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0B5E0B;
+        }
+        .key-display {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .key-active {
+            background-color: #107C10;
+            color: white;
+            border-color: #107C10;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .keyboard-section {
+            margin-top: 20px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
-        <div id="gameOverScreen">
-            <h2 id="gameOverMessage">Game Over</h2>
-            <button id="restartButton">Play Again</button>
+    <div class="container">
+        <h1>Keyboard Event Tester for Xbox</h1>
+        
+        <div class="info-box">
+            <p><strong>Instructions:</strong> This page detects keyboard events which can be triggered by your Xbox controller if it's mapped to keyboard inputs. Click anywhere on the page to activate, then press keys on your connected keyboard or mapped controller buttons.</p>
+            <p><strong>Xbox Note:</strong> If using in Xbox browser, you may need to connect a USB keyboard, or use a third-party controller mapping app that maps controller buttons to keyboard inputs.</p>
         </div>
-    </div>
-    
-    <div id="healthBars">
-        <div class="health-bar">
-            <div id="playerHealth" class="health-bar-fill" style="width: 100%;"></div>
-            <div class="health-label">Car: 60/60</div>
+        
+        <div id="inputArea" class="input-area" tabindex="0">
+            Click here and press any key (or mapped controller button)
         </div>
-        <div class="health-bar">
-            <div id="bossHealth" class="health-bar-fill" style="width: 100%;"></div>
-            <div class="health-label">Clown: 60/60</div>
-        </div>
-    </div>
-    
-    <div id="instructions">
-        <p>Controls: D-pad for movement (Up for jump), Enter key for transform (Xbox A button), X key for shoot (Xbox X button)</p>
-    </div>
-    
-    <div id="controller-layout">
-        <h4 style="margin-top: 0; text-align: center;">Control Mapping</h4>
-        <div class="button-layout">
-            <div class="controller-button">
-                <span>D-Pad Up</span>
-                <span class="keyboard-key">↑</span>
-                <span>Jump</span>
-            </div>
-            <div class="controller-button">
-                <span>D-Pad Left/Right</span>
-                <span class="keyboard-key">←/→</span>
-                <span>Move</span>
-            </div>
-            <div class="controller-button">
-                <span>Xbox A Button (Green)</span>
-                <span class="keyboard-key">Enter</span>
-                <span>Transform</span>
-            </div>
-            <div class="controller-button">
-                <span>Xbox X Button (Blue)</span>
-                <span class="keyboard-key">X</span>
-                <span>Shoot</span>
+        
+        <div class="keyboard-section">
+            <h2>Common Keys</h2>
+            <div id="keyGrid">
+                <!-- Keys will be added dynamically -->
             </div>
         </div>
+        
+        <h2>Event Log</h2>
+        <div id="eventLog" class="event-log"></div>
+        
+        <h2>Detected Key Information</h2>
+        <table id="keyInfoTable">
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>key</td>
+                    <td id="keyValue">-</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td id="codeValue">-</td>
+                </tr>
+                <tr>
+                    <td>keyCode</td>
+                    <td id="keyCodeValue">-</td>
+                </tr>
+                <tr>
+                    <td>which</td>
+                    <td id="whichValue">-</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <button id="clearBtn">Clear Log</button>
     </div>
     
-    <div id="controls">
-        <div id="dpad">
-            <div class="dpad-button" id="dpad-up">↑</div>
-            <div class="dpad-button" id="dpad-left">←</div>
-            <div class="dpad-button" id="dpad-right">→</div>
-            <div class="dpad-button" id="dpad-down">↓</div>
-        </div>
-        <div class="action-buttons">
-            <div class="action-button" id="button-enter">A</div>
-            <div class="action-button" id="button-x">X</div>
-        </div>
-    </div>
+    <footer>
+        Keyboard Event Tester for Xbox | Simple tool for testing button inputs
+    </footer>
 
     <script>
-        // Game setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const restartButton = document.getElementById('restartButton');
-        const playerHealthBar = document.getElementById('playerHealth');
-        const bossHealthBar = document.getElementById('bossHealth');
-
-        // Game constants
-        const GRAVITY = 0.5;
-        const JUMP_FORCE = -12;
-        const GROUND_Y = canvas.height - 50;
-        const BOSS_ARENA_X = 2000;
-
-        // Game state
-        let gameRunning = true;
-        let gameStarted = false;
-        let bossFight = false;
-        let cameraX = 0;
-
-        // Player
-        const player = {
-            x: 50, y: GROUND_Y, width: 60, height: 30,
-            velocityX: 0, velocityY: 0, speed: 5,
-            isJumping: false, isRobot: false,
-            health: 60, maxHealth: 60,
-            bullets: [], lasers: [],
-            lastShootTime: 0, shootCooldown: 500,
-            lastLaserTime: 0, laserCooldown: 1000
-        };
-
-        // Boss
-        const boss = {
-            x: BOSS_ARENA_X + 400, y: GROUND_Y - 80,
-            width: 80, height: 80,
-            health: 60, maxHealth: 60,
-            torpedoes: [],
-            lastShootTime: 0, shootCooldown: 2000
-        };
-
-        // Obstacles
-        let obstacles = [];
-        generateObstacles();
-
-        // Input
-        const keys = {};
+        // Common keys to display
+        const commonKeys = [
+            'A', 'B', 'X', 'Y', 'Q', 'W', 'E', 'R',
+            'Up', 'Down', 'Left', 'Right',
+            'Enter', 'Space', 'Escape', 'Tab'
+        ];
         
-        // Setup controls
-        setupControls();
+        // Active keys tracker
+        const activeKeys = new Set();
         
-        // Main game loop
-        function gameLoop() {
-            if (gameRunning) {
-                update();
-                render();
-            }
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Update game state
-        function update() {
-            if (!gameStarted) return;
+        // Initialize key grid
+        function initKeyGrid() {
+            const keyGrid = document.getElementById('keyGrid');
             
-            handleInput();
-            
-            // Apply gravity and update position
-            player.velocityY += GRAVITY;
-            player.x += player.velocityX;
-            player.y += player.velocityY;
-            
-            // Ground collision
-            if (player.y >= (player.isRobot ? GROUND_Y + 30 - player.height : GROUND_Y)) {
-                player.y = player.isRobot ? GROUND_Y + 30 - player.height : GROUND_Y;
-                player.velocityY = 0;
-                player.isJumping = false;
-            }
-            
-            // Boss arena boundary
-            if (bossFight) {
-                if (player.x < BOSS_ARENA_X) player.x = BOSS_ARENA_X;
-                if (player.x > BOSS_ARENA_X + 600) player.x = BOSS_ARENA_X + 600;
-                
-                // Boss AI - shoot torpedoes
-                const now = Date.now();
-                if (now - boss.lastShootTime > boss.shootCooldown) {
-                    shootTorpedo();
-                    boss.lastShootTime = now;
-                }
-            } else if (player.x >= BOSS_ARENA_X) {
-                // Start boss fight when reaching arena
-                bossFight = true;
-                player.x = BOSS_ARENA_X + 100;
-            }
-            
-            // Update projectiles
-            updateProjectiles();
-            
-            // Update camera
-            cameraX = Math.max(0, player.x - canvas.width / 3);
-            
-            // Check obstacle collisions
-            if (!bossFight) checkObstacleCollisions();
-        }
-
-        // Handle player input
-        function handleInput() {
-            // Reset horizontal velocity
-            player.velocityX = 0;
-            
-            // Move left/right (D-pad)
-            if (keys['ArrowLeft'] && !bossFight) player.velocityX = -player.speed;
-            if (keys['ArrowRight']) player.velocityX = player.speed;
-            
-            // Jump - Up arrow (D-pad Up)
-            if (keys['ArrowUp'] && !player.isJumping) {
-                player.velocityY = JUMP_FORCE;
-                player.isJumping = true;
-            }
-        }
-
-        // Update all projectiles
-        function updateProjectiles() {
-            // Update bullets
-            for (let i = player.bullets.length - 1; i >= 0; i--) {
-                const bullet = player.bullets[i];
-                bullet.x += bullet.speed;
-                
-                // Remove if out of bounds
-                if (bullet.x > canvas.width + cameraX || bullet.x < cameraX) {
-                    player.bullets.splice(i, 1);
-                    continue;
-                }
-                
-                // Check boss collision
-                if (bossFight && checkCollision(bullet, boss)) {
-                    boss.health -= 5;
-                    updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
-                    player.bullets.splice(i, 1);
-                    
-                    if (boss.health <= 0) endGame(true);
-                }
-            }
-            
-            // Update lasers
-            for (let i = player.lasers.length - 1; i >= 0; i--) {
-                const laser = player.lasers[i];
-                laser.x += laser.speed;
-                
-                if (laser.x > canvas.width + cameraX || laser.x < cameraX) {
-                    player.lasers.splice(i, 1);
-                    continue;
-                }
-                
-                if (bossFight && checkCollision(laser, boss)) {
-                    boss.health -= 10;
-                    updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
-                    player.lasers.splice(i, 1);
-                    
-                    if (boss.health <= 0) endGame(true);
-                }
-            }
-            
-            // Update torpedoes
-            for (let i = boss.torpedoes.length - 1; i >= 0; i--) {
-                const torpedo = boss.torpedoes[i];
-                torpedo.x += torpedo.speed;
-                
-                if (torpedo.x < cameraX) {
-                    boss.torpedoes.splice(i, 1);
-                    continue;
-                }
-                
-                if (checkCollision(torpedo, player)) {
-                    player.health -= 5;
-                    updateHealthBar(playerHealthBar, player.health, player.maxHealth);
-                    boss.torpedoes.splice(i, 1);
-                    
-                    if (player.health <= 0) endGame(false);
-                }
-            }
-        }
-
-        // Generate obstacles
-        function generateObstacles() {
-            let x = 300;
-            while (x < BOSS_ARENA_X) {
-                obstacles.push({
-                    x: x,
-                    y: GROUND_Y - Math.random() * 40 - 20,
-                    width: 30,
-                    height: Math.random() * 40 + 20
-                });
-                x += Math.random() * 200 + 300;
-            }
-        }
-
-        // Check obstacle collisions
-        function checkObstacleCollisions() {
-            for (const obstacle of obstacles) {
-                if (checkCollision(player, obstacle)) {
-                    // Push player back
-                    if (player.velocityX > 0) {
-                        player.x = obstacle.x - player.width;
-                    } else if (player.velocityX < 0) {
-                        player.x = obstacle.x + obstacle.width;
-                    }
-                    
-                    // Handle vertical collision
-                    if (player.y + player.height > obstacle.y && 
-                        player.velocityY > 0 &&
-                        player.y < obstacle.y && 
-                        player.x + player.width > obstacle.x && 
-                        player.x < obstacle.x + obstacle.width) {
-                        player.y = obstacle.y - player.height;
-                        player.velocityY = 0;
-                        player.isJumping = false;
-                    }
-                }
-            }
-        }
-
-        // Shoot bullet - X key (Xbox X button)
-        function shootBullet() {
-            const now = Date.now();
-            if (now - player.lastShootTime < player.shootCooldown) return;
-            
-            player.bullets.push({
-                x: player.x + player.width,
-                y: player.y + player.height / 2,
-                width: 10, height: 5, speed: 10
+            commonKeys.forEach(key => {
+                const keyElement = document.createElement('div');
+                keyElement.className = 'key-display';
+                keyElement.id = `key-${key.toLowerCase()}`;
+                keyElement.textContent = key;
+                keyGrid.appendChild(keyElement);
             });
-            player.lastShootTime = now;
-        }
-
-        // Shoot laser - Only in robot form (right now only accessible via code)
-        function shootLaser() {
-            if (!player.isRobot) return;
-            
-            const now = Date.now();
-            if (now - player.lastLaserTime < player.laserCooldown) return;
-            
-            player.lasers.push({
-                x: player.x + player.width,
-                y: player.y + player.height / 2,
-                width: 20, height: 8, speed: 15
-            });
-            player.lastLaserTime = now;
-        }
-
-        // Shoot boss torpedo
-        function shootTorpedo() {
-            boss.torpedoes.push({
-                x: boss.x,
-                y: boss.y + boss.height / 2,
-                width: 25, height: 15, speed: -7
-            });
-        }
-
-        // Transform - Enter key (Xbox A button)
-        function transform() {
-            player.isRobot = !player.isRobot;
-            if (player.isRobot) {
-                player.height = 40;
-                player.width = 40;
-                player.y = GROUND_Y + 30 - player.height;
-            } else {
-                player.height = 30;
-                player.width = 60;
-                player.y = GROUND_Y;
-            }
-        }
-
-        // Check collision between two objects
-        function checkCollision(a, b) {
-            return a.x < b.x + b.width &&
-                   a.x + a.width > b.x &&
-                   a.y < b.y + b.height &&
-                   a.y + a.height > b.y;
-        }
-
-        // Update health bar
-        function updateHealthBar(bar, health, maxHealth) {
-            const percentage = Math.max(0, health / maxHealth * 100);
-            bar.style.width = percentage + '%';
-            
-            // Update color based on health
-            bar.style.backgroundColor = percentage > 60 ? '#4CAF50' : 
-                                        percentage > 30 ? '#FFC107' : '#F44336';
-            
-            // Update label
-            bar.parentElement.querySelector('.health-label').textContent = 
-                (bar === playerHealthBar ? 'Car: ' : 'Clown: ') + health + '/' + maxHealth;
-        }
-
-        // End game
-        function endGame(playerWon) {
-            gameRunning = false;
-            gameOverMessage.textContent = playerWon ? 'You Win!' : 'Game Over';
-            gameOverScreen.style.display = 'flex';
-        }
-
-        // Restart game
-        function restartGame() {
-            // Reset player
-            player.x = 50;
-            player.y = GROUND_Y;
-            player.velocityX = 0;
-            player.velocityY = 0;
-            player.health = player.maxHealth;
-            player.isRobot = false;
-            player.bullets = [];
-            player.lasers = [];
-            player.height = 30;
-            player.width = 60;
-            
-            // Reset boss
-            boss.health = boss.maxHealth;
-            boss.torpedoes = [];
-            
-            // Reset game state
-            gameRunning = true;
-            bossFight = false;
-            cameraX = 0;
-            
-            // Update health bars
-            updateHealthBar(playerHealthBar, player.health, player.maxHealth);
-            updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
-            
-            // Hide game over screen
-            gameOverScreen.style.display = 'none';
         }
         
-        // Setup touch and keyboard controls
-        function setupControls() {
-            // Keyboard controls
-            window.addEventListener('keydown', (e) => {
-                keys[e.key] = true;
-                if (!gameStarted) gameStarted = true;
-                
-                // Handle special keys
-                if (e.key === 'ArrowUp') {
-                    // Jump (D-pad Up)
-                    if (!player.isJumping) {
-                        player.velocityY = JUMP_FORCE;
-                        player.isJumping = true;
-                    }
-                }
-                if (e.key === 'Enter') {
-                    // Transform (Xbox A button)
-                    transform();
-                }
-                if (e.key === 'x' || e.key === 'X') {
-                    // Shoot (Xbox X button)
-                    shootBullet();
-                }
-            });
-            
-            window.addEventListener('keyup', (e) => {
-                keys[e.key] = false;
-            });
-            
-            // Touch/mouse controls
-            const dpadButtons = {
-                'dpad-up': 'ArrowUp',
-                'dpad-left': 'ArrowLeft',
-                'dpad-right': 'ArrowRight',
-                'dpad-down': 'ArrowDown'
-            };
-            
-            // D-pad setup
-            for (const [id, key] of Object.entries(dpadButtons)) {
-                const element = document.getElementById(id);
-                
-                ['touchstart', 'mousedown'].forEach(event => {
-                    element.addEventListener(event, (e) => {
-                        e.preventDefault();
-                        if (!gameStarted) gameStarted = true;
-                        keys[key] = true;
-                        
-                        // Handle jump directly
-                        if (id === 'dpad-up' && !player.isJumping) {
-                            player.velocityY = JUMP_FORCE;
-                            player.isJumping = true;
-                        }
-                    });
-                });
-                
-                ['touchend', 'mouseup'].forEach(event => {
-                    element.addEventListener(event, (e) => {
-                        e.preventDefault();
-                        keys[key] = false;
-                    });
-                });
-            }
-            
-            // Action buttons (Enter and X)
-            document.getElementById('button-enter').addEventListener('mousedown', () => {
-                if (!gameStarted) gameStarted = true;
-                transform();
-            });
-            
-            document.getElementById('button-x').addEventListener('mousedown', shootBullet);
-            
-            // Touch events for mobile
-            document.getElementById('button-enter').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!gameStarted) gameStarted = true;
-                transform();
-            });
-            
-            document.getElementById('button-x').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                shootBullet();
-            });
-            
-            // Restart button
-            restartButton.addEventListener('click', restartGame);
+        // Log event to the event log
+        function logEvent(message) {
+            const eventLog = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            eventLog.appendChild(logEntry);
+            eventLog.scrollTop = eventLog.scrollHeight;
         }
-
-        // Render game
-        function render() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw background
-            ctx.fillStyle = '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw ground
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(0, GROUND_Y + 30, canvas.width, canvas.height - GROUND_Y - 30);
-            ctx.fillStyle = '#3CB371';
-            ctx.fillRect(0, GROUND_Y + 30, canvas.width, 5);
-            
-            // Apply camera transformation
-            ctx.save();
-            ctx.translate(-cameraX, 0);
-            
-            // Draw boss arena boundary
-            if (!bossFight) {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-                ctx.fillRect(BOSS_ARENA_X, 0, 5, canvas.height);
-                ctx.fillStyle = '#000';
-                ctx.font = '20px Arial';
-                ctx.fillText('BOSS AREA →', BOSS_ARENA_X - 120, 50);
-            }
-            
-            // Draw obstacles
-            ctx.fillStyle = '#8B4513';
-            for (const obstacle of obstacles) {
-                if (obstacle.x > cameraX - 100 && obstacle.x < cameraX + canvas.width + 100) {
-                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-                }
-            }
-            
-            // Draw player (car or robot)
-            if (player.isRobot) {
-                // Draw robot
-                ctx.fillStyle = '#1E90FF';
-                ctx.fillRect(player.x, player.y, player.width, player.height);
-                // Robot details
-                ctx.fillStyle = '#DDD';
-                ctx.fillRect(player.x + player.width * 0.25, player.y + player.height * 0.2, player.width * 0.5, player.height * 0.25);
-                ctx.fillStyle = '#FF0';
-                ctx.beginPath();
-                ctx.arc(player.x + player.width * 0.35, player.y + player.height * 0.3, 3, 0, Math.PI * 2);
-                ctx.arc(player.x + player.width * 0.65, player.y + player.height * 0.3, 3, 0, Math.PI * 2);
-                ctx.fill();
-            } else {
-                // Draw car
-                ctx.fillStyle = '#FF0000';
-                ctx.fillRect(player.x, player.y, player.width, player.height);
-                // Car windows
-                ctx.fillStyle = '#87CEFA';
-                ctx.fillRect(player.x + player.width * 0.6, player.y + 5, player.width * 0.3, player.height * 0.3);
-                // Car wheels
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(player.x + player.width * 0.25, player.y + player.height, 8, 0, Math.PI * 2);
-                ctx.arc(player.x + player.width * 0.75, player.y + player.height, 8, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Draw boss (clown)
-            if (bossFight || (player.x > BOSS_ARENA_X - canvas.width)) {
-                // Clown body
-                ctx.fillStyle = '#FF69B4';
-                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-                // Clown face
-                ctx.fillStyle = '#FFF';
-                ctx.beginPath();
-                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.4, boss.width/3, 0, Math.PI * 2);
-                ctx.fill();
-                // Clown features
-                ctx.fillStyle = '#FF0000';
-                ctx.beginPath();
-                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.4, boss.width/8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(boss.x + boss.width*0.35, boss.y + boss.height*0.3, 5, 0, Math.PI * 2);
-                ctx.arc(boss.x + boss.width*0.65, boss.y + boss.height*0.3, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.5, boss.width/5, 0, Math.PI);
-                ctx.stroke();
-                // Hair
-                ctx.fillStyle = '#0F0';
-                ctx.beginPath();
-                ctx.arc(boss.x + boss.width*0.3, boss.y + boss.height*0.1, 10, 0, Math.PI * 2);
-                ctx.arc(boss.x + boss.width*0.5, boss.y, 10, 0, Math.PI * 2);
-                ctx.arc(boss.x + boss.width*0.7, boss.y + boss.height*0.1, 10, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Draw projectiles
-            ctx.fillStyle = '#FF0';
-            for (const bullet of player.bullets) {
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-            }
-            
-            ctx.fillStyle = '#0FF';
-            for (const laser of player.lasers) {
-                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
-            }
-            
-            ctx.fillStyle = '#F0F';
-            for (const torpedo of boss.torpedoes) {
-                ctx.fillRect(torpedo.x, torpedo.y, torpedo.width, torpedo.height);
-            }
-            
-            // Reset transformation
-            ctx.restore();
-            
-            // Draw start prompt
-            if (!gameStarted) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#FFF';
-                ctx.font = '30px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Press any key or touch buttons to start', canvas.width/2, canvas.height/2);
-                ctx.textAlign = 'left';
-            }
+        
+        // Update key info table
+        function updateKeyInfo(event) {
+            document.getElementById('keyValue').textContent = event.key || '-';
+            document.getElementById('codeValue').textContent = event.code || '-';
+            document.getElementById('keyCodeValue').textContent = event.keyCode || '-';
+            document.getElementById('whichValue').textContent = event.which || '-';
         }
-
-        // Start game loop
-        gameLoop();
+        
+        // Handle key down event
+        function handleKeyDown(event) {
+            // Prevent default behavior
+            event.preventDefault();
+            
+            // Get key information
+            const key = event.key.toLowerCase();
+            
+            // Log the event
+            logEvent(`<strong>keydown:</strong> key=${event.key}, code=${event.code}, keyCode=${event.keyCode}`);
+            
+            // Update key info table
+            updateKeyInfo(event);
+            
+            // Add to active keys
+            activeKeys.add(key);
+            
+            // Update key displays
+            updateKeyDisplays();
+        }
+        
+        // Handle key up event
+        function handleKeyUp(event) {
+            // Prevent default behavior
+            event.preventDefault();
+            
+            // Get key information
+            const key = event.key.toLowerCase();
+            
+            // Log the event
+            logEvent(`<strong>keyup:</strong> key=${event.key}, code=${event.code}, keyCode=${event.keyCode}`);
+            
+            // Remove from active keys
+            activeKeys.delete(key);
+            
+            // Update key displays
+            updateKeyDisplays();
+        }
+        
+        // Update key displays based on active keys
+        function updateKeyDisplays() {
+            // Reset all keys
+            commonKeys.forEach(k => {
+                const keyElement = document.getElementById(`key-${k.toLowerCase()}`);
+                if (keyElement) {
+                    keyElement.classList.remove('key-active');
+                }
+            });
+            
+            // Highlight active keys
+            activeKeys.forEach(key => {
+                const keyElement = document.getElementById(`key-${key}`);
+                if (keyElement) {
+                    keyElement.classList.add('key-active');
+                }
+                
+                // Handle special cases
+                if (key === 'arrowup') {
+                    document.getElementById('key-up').classList.add('key-active');
+                } else if (key === 'arrowdown') {
+                    document.getElementById('key-down').classList.add('key-active');
+                } else if (key === 'arrowleft') {
+                    document.getElementById('key-left').classList.add('key-active');
+                } else if (key === 'arrowright') {
+                    document.getElementById('key-right').classList.add('key-active');
+                } else if (key === ' ') {
+                    document.getElementById('key-space').classList.add('key-active');
+                }
+            });
+        }
+        
+        // Initialize when DOM is loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize key grid
+            initKeyGrid();
+            
+            // Get input area
+            const inputArea = document.getElementById('inputArea');
+            
+            // Add event listeners for key events
+            inputArea.addEventListener('keydown', handleKeyDown);
+            inputArea.addEventListener('keyup', handleKeyUp);
+            
+            // Set focus to input area when clicked
+            inputArea.addEventListener('click', () => {
+                inputArea.focus();
+            });
+            
+            // Auto-focus on page load
+            inputArea.focus();
+            
+            // Clear log button
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                document.getElementById('eventLog').innerHTML = '';
+                logEvent('Log cleared');
+            });
+            
+            // Initial log
+            logEvent('Page loaded. Click in the input area and press keys to see events.');
+        });
     </script>
 </body>
 </html>
