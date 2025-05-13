@@ -55,10 +55,8 @@
             justify-content: center; align-items: center; font-size: 24px;
             user-select: none; cursor: pointer; border-radius: 25px;
         }
-        #button-w { background-color: #4CAF50; }
-        #button-a { background-color: #2196F3; }
-        #button-s { background-color: #F44336; }
-        #button-d { background-color: #FFEB3B; color: black; }
+        #button-enter { background-color: #4CAF50; }
+        #button-x { background-color: #2196F3; }
         #controller-layout {
             width: 400px;
             margin: 10px auto;
@@ -110,31 +108,31 @@
     </div>
     
     <div id="instructions">
-        <p>Controls: D-pad to move, W for jump (Xbox A button), A for transform (Xbox X button), S for shoot (Left Bumper), D for laser (Right Bumper, in robot form)</p>
+        <p>Controls: D-pad for movement (Up for jump), Enter key for transform (Xbox A button), X key for shoot (Xbox X button)</p>
     </div>
     
     <div id="controller-layout">
         <h4 style="margin-top: 0; text-align: center;">Control Mapping</h4>
         <div class="button-layout">
             <div class="controller-button">
-                <span>Xbox A Button (Green)</span>
-                <span class="keyboard-key">W</span>
+                <span>D-Pad Up</span>
+                <span class="keyboard-key">↑</span>
                 <span>Jump</span>
             </div>
             <div class="controller-button">
-                <span>Xbox X Button (Blue)</span>
-                <span class="keyboard-key">A</span>
+                <span>D-Pad Left/Right</span>
+                <span class="keyboard-key">←/→</span>
+                <span>Move</span>
+            </div>
+            <div class="controller-button">
+                <span>Xbox A Button (Green)</span>
+                <span class="keyboard-key">Enter</span>
                 <span>Transform</span>
             </div>
             <div class="controller-button">
-                <span>Left Bumper (LB)</span>
-                <span class="keyboard-key">S</span>
+                <span>Xbox X Button (Blue)</span>
+                <span class="keyboard-key">X</span>
                 <span>Shoot</span>
-            </div>
-            <div class="controller-button">
-                <span>Right Bumper (RB)</span>
-                <span class="keyboard-key">D</span>
-                <span>Laser (robot)</span>
             </div>
         </div>
     </div>
@@ -147,10 +145,8 @@
             <div class="dpad-button" id="dpad-down">↓</div>
         </div>
         <div class="action-buttons">
-            <div class="action-button" id="button-w">W</div>
-            <div class="action-button" id="button-a">A</div>
-            <div class="action-button" id="button-s">S</div>
-            <div class="action-button" id="button-d">D</div>
+            <div class="action-button" id="button-enter">A</div>
+            <div class="action-button" id="button-x">X</div>
         </div>
     </div>
 
@@ -268,8 +264,8 @@
             if (keys['ArrowLeft'] && !bossFight) player.velocityX = -player.speed;
             if (keys['ArrowRight']) player.velocityX = player.speed;
             
-            // Jump - W key (Xbox A button)
-            if (keys['w'] && !player.isJumping) {
+            // Jump - Up arrow (D-pad Up)
+            if (keys['ArrowUp'] && !player.isJumping) {
                 player.velocityY = JUMP_FORCE;
                 player.isJumping = true;
             }
@@ -376,7 +372,7 @@
             }
         }
 
-        // Shoot bullet - S key (Left Bumper)
+        // Shoot bullet - X key (Xbox X button)
         function shootBullet() {
             const now = Date.now();
             if (now - player.lastShootTime < player.shootCooldown) return;
@@ -389,7 +385,7 @@
             player.lastShootTime = now;
         }
 
-        // Shoot laser - D key (Right Bumper - robot only)
+        // Shoot laser - Only in robot form (right now only accessible via code)
         function shootLaser() {
             if (!player.isRobot) return;
             
@@ -413,7 +409,7 @@
             });
         }
 
-        // Transform - A key (Xbox X button)
+        // Transform - Enter key (Xbox A button)
         function transform() {
             player.isRobot = !player.isRobot;
             if (player.isRobot) {
@@ -494,25 +490,21 @@
                 keys[e.key] = true;
                 if (!gameStarted) gameStarted = true;
                 
-                // Handle WASD special keys
-                if (e.key === 'w' || e.key === 'W') {
-                    // Jump (Xbox A button)
+                // Handle special keys
+                if (e.key === 'ArrowUp') {
+                    // Jump (D-pad Up)
                     if (!player.isJumping) {
                         player.velocityY = JUMP_FORCE;
                         player.isJumping = true;
                     }
                 }
-                if (e.key === 'a' || e.key === 'A') {
-                    // Transform (Xbox X button)
+                if (e.key === 'Enter') {
+                    // Transform (Xbox A button)
                     transform();
                 }
-                if (e.key === 's' || e.key === 'S') {
-                    // Shoot (Left Bumper)
+                if (e.key === 'x' || e.key === 'X') {
+                    // Shoot (Xbox X button)
                     shootBullet();
-                }
-                if (e.key === 'd' || e.key === 'D') {
-                    // Shoot laser if in robot form (Right Bumper)
-                    shootLaser();
                 }
             });
             
@@ -537,6 +529,12 @@
                         e.preventDefault();
                         if (!gameStarted) gameStarted = true;
                         keys[key] = true;
+                        
+                        // Handle jump directly
+                        if (id === 'dpad-up' && !player.isJumping) {
+                            player.velocityY = JUMP_FORCE;
+                            player.isJumping = true;
+                        }
                     });
                 });
                 
@@ -548,42 +546,24 @@
                 });
             }
             
-            // Action buttons (WASD)
-            document.getElementById('button-w').addEventListener('mousedown', () => {
+            // Action buttons (Enter and X)
+            document.getElementById('button-enter').addEventListener('mousedown', () => {
                 if (!gameStarted) gameStarted = true;
-                if (!player.isJumping) {
-                    player.velocityY = JUMP_FORCE;
-                    player.isJumping = true;
-                }
-            });
-            
-            document.getElementById('button-a').addEventListener('mousedown', transform);
-            document.getElementById('button-s').addEventListener('mousedown', shootBullet);
-            document.getElementById('button-d').addEventListener('mousedown', shootLaser);
-            
-            // Touch events for mobile
-            document.getElementById('button-w').addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!gameStarted) gameStarted = true;
-                if (!player.isJumping) {
-                    player.velocityY = JUMP_FORCE;
-                    player.isJumping = true;
-                }
-            });
-            
-            document.getElementById('button-a').addEventListener('touchstart', (e) => {
-                e.preventDefault();
                 transform();
             });
             
-            document.getElementById('button-s').addEventListener('touchstart', (e) => {
+            document.getElementById('button-x').addEventListener('mousedown', shootBullet);
+            
+            // Touch events for mobile
+            document.getElementById('button-enter').addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                shootBullet();
+                if (!gameStarted) gameStarted = true;
+                transform();
             });
             
-            document.getElementById('button-d').addEventListener('touchstart', (e) => {
+            document.getElementById('button-x').addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                shootLaser();
+                shootBullet();
             });
             
             // Restart button
