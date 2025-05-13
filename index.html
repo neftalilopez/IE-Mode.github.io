@@ -1,204 +1,655 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebM Test</title>
+    <title>Car vs Clown Platform Game</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
-            background-color: #f5f5f5;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            font-family: Arial, sans-serif;
         }
-        .container {
-            text-align: center;
-            max-width: 800px;
-            width: 100%;
-            padding: 20px;
+        #gameContainer { position: relative; width: 800px; height: 400px; margin: 20px auto; }
+        #gameCanvas { background-color: #87CEEB; border: 2px solid #000; }
+        .health-bar {
+            height: 20px; width: 300px; background: #ccc; 
+            position: relative; margin: 10px; display: inline-block;
         }
-        button {
-            padding: 12px 24px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin: 5px;
+        .health-bar-fill {
+            height: 100%; background: #4CAF50; transition: width 0.2s ease;
         }
-        button:hover {
-            background-color: #45a049;
+        .health-label {
+            position: absolute; top: 0; left: 0; right: 0;
+            text-align: center; color: white; text-shadow: 1px 1px 1px #000;
         }
-        #videoPlayer {
-            margin-top: 20px;
-            max-width: 100%;
-            display: none;
+        #healthBars, #instructions { text-align: center; margin: 10px; }
+        #gameOverScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); color: white;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
         }
-        .cast-button {
-            background-color: #2196F3;
+        #gameOverScreen button {
+            margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer;
         }
-        .cast-button:hover {
-            background-color: #0b7dda;
+        #controls { margin-top: 10px; text-align: center; }
+        #dpad {
+            position: relative; width: 150px; height: 150px; margin: 10px auto;
         }
-        .controls {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
+        .dpad-button {
+            position: absolute; width: 50px; height: 50px; background-color: #444;
+            color: white; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; user-select: none; cursor: pointer; border-radius: 5px;
         }
-        .qr-container {
-            margin-top: 20px;
-            display: none;
+        #dpad-up { top: 0; left: 50px; }
+        #dpad-left { top: 50px; left: 0; }
+        #dpad-right { top: 50px; left: 100px; }
+        #dpad-down { top: 100px; left: 50px; }
+        .action-buttons {
+            display: flex; justify-content: center; gap: 10px; margin-top: 10px;
         }
-        #qrCode {
-            margin: 0 auto;
-            max-width: 200px;
+        .action-button {
+            width: 50px; height: 50px; color: white; display: flex;
+            justify-content: center; align-items: center; font-size: 24px;
+            user-select: none; cursor: pointer; border-radius: 25px;
         }
+        #button-a { background-color: #4CAF50; }
+        #button-b { background-color: #2196F3; }
+        #button-x { background-color: #F44336; }
+        #button-y { background-color: #FFEB3B; color: black; }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <a href="https://drive.google.com/file/d/14UI15zXlLkRSdEspTxjxczPqG0_bSQ1L/view?usp=sharing">Click to view my Google Drive file</a>
-        <br>
-        <br>
-        <a href="https://flashplayer.fullstacks.net/?kind=Flash_Emulator">Flash Emulator</a>
-        <br>
-        <br>
-href="https://flashplayer.fullstacks.net/?kind=Flash_Emulator">Flash Emulator</a>
-        <button id="playButton">Play 3 Stooges Video</button>
-        <div class="controls">
-            <button id="castButton" class="cast-button">Cast to Device</button>
-            <button id="xboxLinkButton" class="cast-button">Xbox Link</button>
-            <button id="shareQRButton" class="cast-button">Share via QR Code</button>
-        </div>
-        <video id="videoPlayer" controls playsinline></video>
-        
-        <div class="qr-container" id="qrContainer">
-            <h3>Scan QR Code to Watch on Another Device</h3>
-            <div id="qrCode"></div>
-            <p>Or use this direct link:</p>
-            <a id="directLink" href="#" target="_blank"></a>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="gameOverScreen">
+            <h2 id="gameOverMessage">Game Over</h2>
+            <button id="restartButton">Play Again</button>
         </div>
     </div>
     
-    <!-- Google Cast SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+    <div id="healthBars">
+        <div class="health-bar">
+            <div id="playerHealth" class="health-bar-fill" style="width: 100%;"></div>
+            <div class="health-label">Car: 60/60</div>
+        </div>
+        <div class="health-bar">
+            <div id="bossHealth" class="health-bar-fill" style="width: 100%;"></div>
+            <div class="health-label">Clown: 60/60</div>
+        </div>
+    </div>
     
+    <div id="instructions">
+        <p>Controls: Arrow keys to move, A to jump, X to shoot, B to transform, Y to shoot lasers (in robot form)</p>
+    </div>
+    
+    <div id="controls">
+        <div id="dpad">
+            <div class="dpad-button" id="dpad-up">↑</div>
+            <div class="dpad-button" id="dpad-left">←</div>
+            <div class="dpad-button" id="dpad-right">→</div>
+            <div class="dpad-button" id="dpad-down">↓</div>
+        </div>
+        <div class="action-buttons">
+            <div class="action-button" id="button-a">A</div>
+            <div class="action-button" id="button-b">B</div>
+            <div class="action-button" id="button-x">X</div>
+            <div class="action-button" id="button-y">Y</div>
+        </div>
+    </div>
+
     <script>
-        // Video URL
-        const videoUrl = 'https://dn721806.ca.archive.org/0/items/have-rocket-will-travel-colorized/Have%20Rocket-Will%20Travel.mp4';
-        
-        // Elements
-        const videoPlayer = document.getElementById('videoPlayer');
-        const playButton = document.getElementById('playButton');
-        const castButton = document.getElementById('castButton');
-        const xboxLinkButton = document.getElementById('xboxLinkButton');
-        const shareQRButton = document.getElementById('shareQRButton');
-        const qrContainer = document.getElementById('qrContainer');
-        const directLink = document.getElementById('directLink');
-        
-        // Initialize page URL for sharing
-        const pageUrl = window.location.href;
-        
-        // Play video locally
-        playButton.addEventListener('click', function() {
-            videoPlayer.src = videoUrl;
-            videoPlayer.style.display = 'block';
-            videoPlayer.play();
-        });
-        
-        // Generate QR code for sharing
-        shareQRButton.addEventListener('click', function() {
-            qrContainer.style.display = 'block';
-            
-            // Clear previous QR code if exists
-            document.getElementById('qrCode').innerHTML = '';
-            
-            // Generate QR code with the current page URL
-            new QRCode(document.getElementById('qrCode'), {
-                text: pageUrl,
-                width: 200,
-                height: 200
-            });
-            
-            // Update direct link
-            directLink.href = pageUrl;
-            directLink.textContent = pageUrl;
-        });
-        
-        // Xbox Link - Creates a direct video link for Xbox
-        xboxLinkButton.addEventListener('click', function() {
-            // Create a simple page with just the video player
-            const xboxPlayerUrl = videoUrl;
-            
-            // Show instructions for Xbox users
-            const xboxInstructions = `
-                Xbox browsers often block local file access for security reasons.
-                
-                To watch on Xbox:
-                1. On your Xbox, open Microsoft Edge
-                2. Go directly to the video URL: ${xboxPlayerUrl}
-                3. The video should open directly in the browser
-                
-                Or you can use the Xbox Media Player app to play the video from a USB drive.
-            `;
-            alert(xboxInstructions);
-            
-            // Open the direct video URL in a new tab
-            window.open(videoUrl, '_blank');
-        });
-        
-        // Initialize Google Cast API
-        window.__onGCastApiAvailable = function(isAvailable) {
-            if (isAvailable) {
-                initializeCastApi();
-            }
+        // Game setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartButton = document.getElementById('restartButton');
+        const playerHealthBar = document.getElementById('playerHealth');
+        const bossHealthBar = document.getElementById('bossHealth');
+
+        // Game constants
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = -12;
+        const GROUND_Y = canvas.height - 50;
+        const BOSS_ARENA_X = 2000;
+
+        // Game state
+        let gameRunning = true;
+        let gameStarted = false;
+        let bossFight = false;
+        let cameraX = 0;
+
+        // Player
+        const player = {
+            x: 50, y: GROUND_Y, width: 60, height: 30,
+            velocityX: 0, velocityY: 0, speed: 5,
+            isJumping: false, isRobot: false,
+            health: 60, maxHealth: 60,
+            bullets: [], lasers: [],
+            lastShootTime: 0, shootCooldown: 500,
+            lastLaserTime: 0, laserCooldown: 1000
         };
+
+        // Boss
+        const boss = {
+            x: BOSS_ARENA_X + 400, y: GROUND_Y - 80,
+            width: 80, height: 80,
+            health: 60, maxHealth: 60,
+            torpedoes: [],
+            lastShootTime: 0, shootCooldown: 2000
+        };
+
+        // Obstacles
+        let obstacles = [];
+        generateObstacles();
+
+        // Input
+        const keys = {};
         
-        // Setup Cast API
-        function initializeCastApi() {
-            cast.framework.CastContext.getInstance().setOptions({
-                receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-                autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-            });
+        // Setup controls
+        setupControls();
+        
+        // Main game loop
+        function gameLoop() {
+            if (gameRunning) {
+                update();
+                render();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Update game state
+        function update() {
+            if (!gameStarted) return;
             
-            // Add cast functionality to button
-            castButton.addEventListener('click', function() {
-                const castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+            handleInput();
+            
+            // Apply gravity and update position
+            player.velocityY += GRAVITY;
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            // Ground collision
+            if (player.y >= (player.isRobot ? GROUND_Y + 30 - player.height : GROUND_Y)) {
+                player.y = player.isRobot ? GROUND_Y + 30 - player.height : GROUND_Y;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+            
+            // Boss arena boundary
+            if (bossFight) {
+                if (player.x < BOSS_ARENA_X) player.x = BOSS_ARENA_X;
+                if (player.x > BOSS_ARENA_X + 600) player.x = BOSS_ARENA_X + 600;
                 
-                if (castSession) {
-                    // Create media info
-                    const mediaInfo = new chrome.cast.media.MediaInfo(videoUrl, 'video/mp4');
-                    mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-                    mediaInfo.metadata.title = '3 Stooges: Have Rocket-Will Travel';
-                    
-                    // Create request
-                    const request = new chrome.cast.media.LoadRequest(mediaInfo);
-                    
-                    // Load media
-                    castSession.loadMedia(request).then(
-                        function() {
-                            console.log('Cast media loaded successfully');
-                        },
-                        function(errorCode) {
-                            console.error('Error casting media. Error code: ' + errorCode);
-                        }
-                    );
-                } else {
-                    // Show cast dialog if not connected
-                    cast.framework.CastContext.getInstance().requestSession();
+                // Boss AI - shoot torpedoes
+                const now = Date.now();
+                if (now - boss.lastShootTime > boss.shootCooldown) {
+                    shootTorpedo();
+                    boss.lastShootTime = now;
                 }
+            } else if (player.x >= BOSS_ARENA_X) {
+                // Start boss fight when reaching arena
+                bossFight = true;
+                player.x = BOSS_ARENA_X + 100;
+            }
+            
+            // Update projectiles
+            updateProjectiles();
+            
+            // Update camera
+            cameraX = Math.max(0, player.x - canvas.width / 3);
+            
+            // Check obstacle collisions
+            if (!bossFight) checkObstacleCollisions();
+        }
+
+        // Handle player input
+        function handleInput() {
+            // Reset horizontal velocity
+            player.velocityX = 0;
+            
+            // Move left/right
+            if ((keys['ArrowLeft'] || keys['a']) && !bossFight) player.velocityX = -player.speed;
+            if (keys['ArrowRight'] || keys['d']) player.velocityX = player.speed;
+            
+            // Jump
+            if ((keys['ArrowUp'] || keys['A']) && !player.isJumping) {
+                player.velocityY = JUMP_FORCE;
+                player.isJumping = true;
+            }
+        }
+
+        // Update all projectiles
+        function updateProjectiles() {
+            // Update bullets
+            for (let i = player.bullets.length - 1; i >= 0; i--) {
+                const bullet = player.bullets[i];
+                bullet.x += bullet.speed;
+                
+                // Remove if out of bounds
+                if (bullet.x > canvas.width + cameraX || bullet.x < cameraX) {
+                    player.bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Check boss collision
+                if (bossFight && checkCollision(bullet, boss)) {
+                    boss.health -= 5;
+                    updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
+                    player.bullets.splice(i, 1);
+                    
+                    if (boss.health <= 0) endGame(true);
+                }
+            }
+            
+            // Update lasers
+            for (let i = player.lasers.length - 1; i >= 0; i--) {
+                const laser = player.lasers[i];
+                laser.x += laser.speed;
+                
+                if (laser.x > canvas.width + cameraX || laser.x < cameraX) {
+                    player.lasers.splice(i, 1);
+                    continue;
+                }
+                
+                if (bossFight && checkCollision(laser, boss)) {
+                    boss.health -= 10;
+                    updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
+                    player.lasers.splice(i, 1);
+                    
+                    if (boss.health <= 0) endGame(true);
+                }
+            }
+            
+            // Update torpedoes
+            for (let i = boss.torpedoes.length - 1; i >= 0; i--) {
+                const torpedo = boss.torpedoes[i];
+                torpedo.x += torpedo.speed;
+                
+                if (torpedo.x < cameraX) {
+                    boss.torpedoes.splice(i, 1);
+                    continue;
+                }
+                
+                if (checkCollision(torpedo, player)) {
+                    player.health -= 5;
+                    updateHealthBar(playerHealthBar, player.health, player.maxHealth);
+                    boss.torpedoes.splice(i, 1);
+                    
+                    if (player.health <= 0) endGame(false);
+                }
+            }
+        }
+
+        // Generate obstacles
+        function generateObstacles() {
+            let x = 300;
+            while (x < BOSS_ARENA_X) {
+                obstacles.push({
+                    x: x,
+                    y: GROUND_Y - Math.random() * 40 - 20,
+                    width: 30,
+                    height: Math.random() * 40 + 20
+                });
+                x += Math.random() * 200 + 300;
+            }
+        }
+
+        // Check obstacle collisions
+        function checkObstacleCollisions() {
+            for (const obstacle of obstacles) {
+                if (checkCollision(player, obstacle)) {
+                    // Push player back
+                    if (player.velocityX > 0) {
+                        player.x = obstacle.x - player.width;
+                    } else if (player.velocityX < 0) {
+                        player.x = obstacle.x + obstacle.width;
+                    }
+                    
+                    // Handle vertical collision
+                    if (player.y + player.height > obstacle.y && 
+                        player.velocityY > 0 &&
+                        player.y < obstacle.y && 
+                        player.x + player.width > obstacle.x && 
+                        player.x < obstacle.x + obstacle.width) {
+                        player.y = obstacle.y - player.height;
+                        player.velocityY = 0;
+                        player.isJumping = false;
+                    }
+                }
+            }
+        }
+
+        // Shoot bullet (X button)
+        function shootBullet() {
+            const now = Date.now();
+            if (now - player.lastShootTime < player.shootCooldown) return;
+            
+            player.bullets.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2,
+                width: 10, height: 5, speed: 10
+            });
+            player.lastShootTime = now;
+        }
+
+        // Shoot laser (Y button - robot only)
+        function shootLaser() {
+            if (!player.isRobot) return;
+            
+            const now = Date.now();
+            if (now - player.lastLaserTime < player.laserCooldown) return;
+            
+            player.lasers.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2,
+                width: 20, height: 8, speed: 15
+            });
+            player.lastLaserTime = now;
+        }
+
+        // Shoot boss torpedo
+        function shootTorpedo() {
+            boss.torpedoes.push({
+                x: boss.x,
+                y: boss.y + boss.height / 2,
+                width: 25, height: 15, speed: -7
             });
         }
-    </script>
 
+        // Transform (B button)
+        function transform() {
+            player.isRobot = !player.isRobot;
+            if (player.isRobot) {
+                player.height = 40;
+                player.width = 40;
+                player.y = GROUND_Y + 30 - player.height;
+            } else {
+                player.height = 30;
+                player.width = 60;
+                player.y = GROUND_Y;
+            }
+        }
+
+        // Check collision between two objects
+        function checkCollision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        // Update health bar
+        function updateHealthBar(bar, health, maxHealth) {
+            const percentage = Math.max(0, health / maxHealth * 100);
+            bar.style.width = percentage + '%';
+            
+            // Update color based on health
+            bar.style.backgroundColor = percentage > 60 ? '#4CAF50' : 
+                                        percentage > 30 ? '#FFC107' : '#F44336';
+            
+            // Update label
+            bar.parentElement.querySelector('.health-label').textContent = 
+                (bar === playerHealthBar ? 'Car: ' : 'Clown: ') + health + '/' + maxHealth;
+        }
+
+        // End game
+        function endGame(playerWon) {
+            gameRunning = false;
+            gameOverMessage.textContent = playerWon ? 'You Win!' : 'Game Over';
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // Restart game
+        function restartGame() {
+            // Reset player
+            player.x = 50;
+            player.y = GROUND_Y;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            player.health = player.maxHealth;
+            player.isRobot = false;
+            player.bullets = [];
+            player.lasers = [];
+            player.height = 30;
+            player.width = 60;
+            
+            // Reset boss
+            boss.health = boss.maxHealth;
+            boss.torpedoes = [];
+            
+            // Reset game state
+            gameRunning = true;
+            bossFight = false;
+            cameraX = 0;
+            
+            // Update health bars
+            updateHealthBar(playerHealthBar, player.health, player.maxHealth);
+            updateHealthBar(bossHealthBar, boss.health, boss.maxHealth);
+            
+            // Hide game over screen
+            gameOverScreen.style.display = 'none';
+        }
+        
+        // Setup touch and keyboard controls
+        function setupControls() {
+            // Keyboard controls
+            window.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                if (!gameStarted) gameStarted = true;
+                
+                // Handle special keys
+                if (e.key === 'x' || e.key === 'X') shootBullet();
+                if (e.key === 'b' || e.key === 'B') transform();
+                if ((e.key === 'y' || e.key === 'Y') && player.isRobot) shootLaser();
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
+            
+            // Touch/mouse controls
+            const dpadButtons = {
+                'dpad-up': 'ArrowUp',
+                'dpad-left': 'ArrowLeft',
+                'dpad-right': 'ArrowRight',
+                'dpad-down': 'ArrowDown'
+            };
+            
+            // D-pad setup
+            for (const [id, key] of Object.entries(dpadButtons)) {
+                const element = document.getElementById(id);
+                
+                ['touchstart', 'mousedown'].forEach(event => {
+                    element.addEventListener(event, (e) => {
+                        e.preventDefault();
+                        if (!gameStarted) gameStarted = true;
+                        keys[key] = true;
+                    });
+                });
+                
+                ['touchend', 'mouseup'].forEach(event => {
+                    element.addEventListener(event, (e) => {
+                        e.preventDefault();
+                        keys[key] = false;
+                    });
+                });
+            }
+            
+            // Action buttons
+            document.getElementById('button-a').addEventListener('mousedown', () => {
+                if (!gameStarted) gameStarted = true;
+                keys['ArrowUp'] = true;
+            });
+            document.getElementById('button-a').addEventListener('mouseup', () => {
+                keys['ArrowUp'] = false;
+            });
+            
+            document.getElementById('button-b').addEventListener('mousedown', transform);
+            document.getElementById('button-x').addEventListener('mousedown', shootBullet);
+            document.getElementById('button-y').addEventListener('mousedown', shootLaser);
+            
+            // Touch events for mobile
+            document.getElementById('button-a').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!gameStarted) gameStarted = true;
+                keys['ArrowUp'] = true;
+            });
+            document.getElementById('button-a').addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys['ArrowUp'] = false;
+            });
+            
+            document.getElementById('button-b').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                transform();
+            });
+            
+            document.getElementById('button-x').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                shootBullet();
+            });
+            
+            document.getElementById('button-y').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                shootLaser();
+            });
+            
+            // Restart button
+            restartButton.addEventListener('click', restartGame);
+        }
+
+        // Render game
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ground
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, GROUND_Y + 30, canvas.width, canvas.height - GROUND_Y - 30);
+            ctx.fillStyle = '#3CB371';
+            ctx.fillRect(0, GROUND_Y + 30, canvas.width, 5);
+            
+            // Apply camera transformation
+            ctx.save();
+            ctx.translate(-cameraX, 0);
+            
+            // Draw boss arena boundary
+            if (!bossFight) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                ctx.fillRect(BOSS_ARENA_X, 0, 5, canvas.height);
+                ctx.fillStyle = '#000';
+                ctx.font = '20px Arial';
+                ctx.fillText('BOSS AREA →', BOSS_ARENA_X - 120, 50);
+            }
+            
+            // Draw obstacles
+            ctx.fillStyle = '#8B4513';
+            for (const obstacle of obstacles) {
+                if (obstacle.x > cameraX - 100 && obstacle.x < cameraX + canvas.width + 100) {
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                }
+            }
+            
+            // Draw player (car or robot)
+            if (player.isRobot) {
+                // Draw robot
+                ctx.fillStyle = '#1E90FF';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+                // Robot details
+                ctx.fillStyle = '#DDD';
+                ctx.fillRect(player.x + player.width * 0.25, player.y + player.height * 0.2, player.width * 0.5, player.height * 0.25);
+                ctx.fillStyle = '#FF0';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width * 0.35, player.y + player.height * 0.3, 3, 0, Math.PI * 2);
+                ctx.arc(player.x + player.width * 0.65, player.y + player.height * 0.3, 3, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Draw car
+                ctx.fillStyle = '#FF0000';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+                // Car windows
+                ctx.fillStyle = '#87CEFA';
+                ctx.fillRect(player.x + player.width * 0.6, player.y + 5, player.width * 0.3, player.height * 0.3);
+                // Car wheels
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width * 0.25, player.y + player.height, 8, 0, Math.PI * 2);
+                ctx.arc(player.x + player.width * 0.75, player.y + player.height, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw boss (clown)
+            if (bossFight || (player.x > BOSS_ARENA_X - canvas.width)) {
+                // Clown body
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+                // Clown face
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.4, boss.width/3, 0, Math.PI * 2);
+                ctx.fill();
+                // Clown features
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.4, boss.width/8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width*0.35, boss.y + boss.height*0.3, 5, 0, Math.PI * 2);
+                ctx.arc(boss.x + boss.width*0.65, boss.y + boss.height*0.3, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width/2, boss.y + boss.height*0.5, boss.width/5, 0, Math.PI);
+                ctx.stroke();
+                // Hair
+                ctx.fillStyle = '#0F0';
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width*0.3, boss.y + boss.height*0.1, 10, 0, Math.PI * 2);
+                ctx.arc(boss.x + boss.width*0.5, boss.y, 10, 0, Math.PI * 2);
+                ctx.arc(boss.x + boss.width*0.7, boss.y + boss.height*0.1, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw projectiles
+            ctx.fillStyle = '#FF0';
+            for (const bullet of player.bullets) {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            }
+            
+            ctx.fillStyle = '#0FF';
+            for (const laser of player.lasers) {
+                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+            }
+            
+            ctx.fillStyle = '#F0F';
+            for (const torpedo of boss.torpedoes) {
+                ctx.fillRect(torpedo.x, torpedo.y, torpedo.width, torpedo.height);
+            }
+            
+            // Reset transformation
+            ctx.restore();
+            
+            // Draw start prompt
+            if (!gameStarted) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFF';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press any key or touch buttons to start', canvas.width/2, canvas.height/2);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // Start game loop
+        gameLoop();
+    </script>
 </body>
 </html>
