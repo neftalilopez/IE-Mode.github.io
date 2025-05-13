@@ -3,306 +3,877 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keyboard Event Tester for Xbox</title>
+    <title>Cosmic Defender</title>
     <style>
         body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-            color: #333;
+            color: white;
         }
-        h1 {
-            color: #107C10;
-            text-align: center;
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('/api/placeholder/800/1600');
+            background-size: cover;
+            overflow: hidden;
         }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        
+        #player {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 10;
+            transition: transform 0.1s ease-out;
         }
-        .event-log {
-            margin-top: 20px;
+        
+        .enemy {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            border-radius: 5px;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        
+        .missile {
+            position: absolute;
+            width: 8px;
+            height: 20px;
+            background-color: #00ff00;
+            border-radius: 4px;
+            z-index: 5;
+        }
+        
+        .bomb {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #ff9900;
+            border-radius: 50%;
+            z-index: 5;
+        }
+        
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-color: transparent;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,0,0,0.6) 50%, rgba(0,0,0,0) 80%);
+            z-index: 15;
+            animation: expand 0.5s ease-out forwards;
+        }
+        
+        @keyframes expand {
+            0% {
+                transform: scale(0.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
+        #gameStats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
             padding: 10px;
-            background-color: #eee;
+            background-color: rgba(0, 0, 0, 0.7);
             border-radius: 5px;
-            height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
+            z-index: 20;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
             font-size: 14px;
+            z-index: 20;
         }
-        .input-area {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f8f8;
-            border-radius: 5px;
-            border: 2px solid #107C10;
-            text-align: center;
+        
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            display: none;
         }
-        .input-area:focus {
-            outline: none;
-            border-color: #0e5e0e;
+        
+        #gameOverScreen h1 {
+            color: #ff0000;
+            font-size: 48px;
+            margin-bottom: 20px;
         }
-        .info-box {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e8f5e9;
-            border-left: 4px solid #107C10;
-            border-radius: 2px;
-        }
-        button {
+        
+        #gameOverScreen button {
+            padding: 15px 30px;
+            font-size: 24px;
             background-color: #107C10;
             color: white;
             border: none;
-            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
-            margin-top: 10px;
         }
-        button:hover {
-            background-color: #0B5E0B;
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
         }
-        .key-display {
-            display: inline-block;
-            margin: 5px;
-            padding: 8px 12px;
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
+        
+        #startScreen h1 {
+            color: #00ff00;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        .key-active {
+        
+        #startScreen button {
+            padding: 15px 30px;
+            font-size: 24px;
             background-color: #107C10;
             color: white;
-            border-color: #107C10;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        
+        .powerup {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #00ffff;
+            border-radius: 50%;
+            z-index: 5;
+            animation: pulse 1.5s infinite;
         }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        footer {
-            margin-top: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-        }
-        .keyboard-section {
-            margin-top: 20px;
-            text-align: center;
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Keyboard Event Tester for Xbox</h1>
+    <div id="gameContainer">
+        <div id="player"></div>
         
-        <div class="info-box">
-            <p><strong>Instructions:</strong> This page detects keyboard events which can be triggered by your Xbox controller if it's mapped to keyboard inputs. Click anywhere on the page to activate, then press keys on your connected keyboard or mapped controller buttons.</p>
-            <p><strong>Xbox Note:</strong> If using in Xbox browser, you may need to connect a USB keyboard, or use a third-party controller mapping app that maps controller buttons to keyboard inputs.</p>
+        <div id="gameStats">
+            Score: <span id="score">0</span> | 
+            Lives: <span id="lives">3</span> | 
+            Mode: <span id="mode">Ship</span>
         </div>
         
-        <div id="inputArea" class="input-area" tabindex="0">
-            Click here and press any key (or mapped controller button)
+        <div id="controls">
+            <p>D-Pad: Move</p>
+            <p>Left Bumper (200): Fire Missile</p>
+            <p>Right Bumper (199): Drop Bomb</p>
+            <p>Copy Button (208): Transform</p>
         </div>
         
-        <div class="keyboard-section">
-            <h2>Common Keys</h2>
-            <div id="keyGrid">
-                <!-- Keys will be added dynamically -->
-            </div>
+        <div id="startScreen">
+            <h1>COSMIC DEFENDER</h1>
+            <p>D-Pad to move, buttons to attack</p>
+            <button id="startButton">START GAME</button>
         </div>
         
-        <h2>Event Log</h2>
-        <div id="eventLog" class="event-log"></div>
-        
-        <h2>Detected Key Information</h2>
-        <table id="keyInfoTable">
-            <thead>
-                <tr>
-                    <th>Property</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>key</td>
-                    <td id="keyValue">-</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td id="codeValue">-</td>
-                </tr>
-                <tr>
-                    <td>keyCode</td>
-                    <td id="keyCodeValue">-</td>
-                </tr>
-                <tr>
-                    <td>which</td>
-                    <td id="whichValue">-</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <button id="clearBtn">Clear Log</button>
+        <div id="gameOverScreen">
+            <h1>GAME OVER</h1>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button id="restartButton">Play Again</button>
+        </div>
     </div>
     
-    <footer>
-        Keyboard Event Tester for Xbox | Simple tool for testing button inputs
-    </footer>
-
     <script>
-        // Common keys to display
-        const commonKeys = [
-            'A', 'B', 'X', 'Y', 'Q', 'W', 'E', 'R',
-            'Up', 'Down', 'Left', 'Right',
-            'Enter', 'Space', 'Escape', 'Tab'
-        ];
+        // Game variables
+        let player;
+        let gameContainer;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = false;
+        let playerMode = 'ship'; // 'ship' or 'robot'
         
-        // Active keys tracker
-        const activeKeys = new Set();
+        // Player movement
+        let playerX = 0;
+        let playerY = 0;
+        let playerWidth = 64;
+        let playerHeight = 64;
+        let playerSpeed = 7;
         
-        // Initialize key grid
-        function initKeyGrid() {
-            const keyGrid = document.getElementById('keyGrid');
+        // Keyboard/controller state
+        const keyStates = {};
+        
+        // Game elements
+        const missiles = [];
+        const bombs = [];
+        const enemies = [];
+        const explosions = [];
+        const powerups = [];
+        
+        // Enemy spawning
+        let enemySpawnRate = 1500; // milliseconds
+        let lastEnemySpawn = 0;
+        
+        // Powerup spawning
+        let powerupSpawnRate = 10000; // milliseconds
+        let lastPowerupSpawn = 0;
+        
+        // Weapon cooldowns
+        let missileCooldown = 300; // milliseconds
+        let lastMissileFired = 0;
+        let bombCooldown = 1000; // milliseconds
+        let lastBombDropped = 0;
+        let transformCooldown = 2000; // milliseconds
+        let lastTransform = 0;
+        
+        // Xbox controller keycodes
+        const XBOX_LEFT_BUMPER = 200;  // Fire missile
+        const XBOX_RIGHT_BUMPER = 199; // Drop bomb
+        const XBOX_COPY_BUTTON = 208;  // Transform
+        
+        // Game initialization
+        window.onload = function() {
+            gameContainer = document.getElementById('gameContainer');
+            player = document.getElementById('player');
             
-            commonKeys.forEach(key => {
-                const keyElement = document.createElement('div');
-                keyElement.className = 'key-display';
-                keyElement.id = `key-${key.toLowerCase()}`;
-                keyElement.textContent = key;
-                keyGrid.appendChild(keyElement);
-            });
+            // Set initial player position
+            resetPlayerPosition();
+            updatePlayerDisplay();
+            
+            // Event listeners
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('restartButton').addEventListener('click', startGame);
+            
+            // Focus the game container for keyboard events
+            gameContainer.focus();
+        };
+        
+        function resetPlayerPosition() {
+            // Place the player in the bottom-center of the screen
+            playerX = (window.innerWidth - playerWidth) / 2;
+            playerY = window.innerHeight - playerHeight - 100;
         }
         
-        // Log event to the event log
-        function logEvent(message) {
-            const eventLog = document.getElementById('eventLog');
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.innerHTML = `[${timestamp}] ${message}`;
-            eventLog.appendChild(logEntry);
-            eventLog.scrollTop = eventLog.scrollHeight;
+        function startGame() {
+            // Reset game state
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            playerMode = 'ship';
+            updatePlayerDisplay();
+            
+            // Clear all game elements
+            clearAllElements();
+            
+            // Reset player position
+            resetPlayerPosition();
+            
+            // Update UI
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('mode').textContent = 'Ship';
+            
+            // Hide screens
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
         }
         
-        // Update key info table
-        function updateKeyInfo(event) {
-            document.getElementById('keyValue').textContent = event.key || '-';
-            document.getElementById('codeValue').textContent = event.code || '-';
-            document.getElementById('keyCodeValue').textContent = event.keyCode || '-';
-            document.getElementById('whichValue').textContent = event.which || '-';
-        }
-        
-        // Handle key down event
-        function handleKeyDown(event) {
-            // Prevent default behavior
-            event.preventDefault();
-            
-            // Get key information
-            const key = event.key.toLowerCase();
-            
-            // Log the event
-            logEvent(`<strong>keydown:</strong> key=${event.key}, code=${event.code}, keyCode=${event.keyCode}`);
-            
-            // Update key info table
-            updateKeyInfo(event);
-            
-            // Add to active keys
-            activeKeys.add(key);
-            
-            // Update key displays
-            updateKeyDisplays();
-        }
-        
-        // Handle key up event
-        function handleKeyUp(event) {
-            // Prevent default behavior
-            event.preventDefault();
-            
-            // Get key information
-            const key = event.key.toLowerCase();
-            
-            // Log the event
-            logEvent(`<strong>keyup:</strong> key=${event.key}, code=${event.code}, keyCode=${event.keyCode}`);
-            
-            // Remove from active keys
-            activeKeys.delete(key);
-            
-            // Update key displays
-            updateKeyDisplays();
-        }
-        
-        // Update key displays based on active keys
-        function updateKeyDisplays() {
-            // Reset all keys
-            commonKeys.forEach(k => {
-                const keyElement = document.getElementById(`key-${k.toLowerCase()}`);
-                if (keyElement) {
-                    keyElement.classList.remove('key-active');
+        function clearAllElements() {
+            // Remove all enemies
+            enemies.forEach(enemy => {
+                if (enemy.element && enemy.element.parentNode) {
+                    enemy.element.parentNode.removeChild(enemy.element);
                 }
             });
+            enemies.length = 0;
             
-            // Highlight active keys
-            activeKeys.forEach(key => {
-                const keyElement = document.getElementById(`key-${key}`);
-                if (keyElement) {
-                    keyElement.classList.add('key-active');
+            // Remove all missiles
+            missiles.forEach(missile => {
+                if (missile.element && missile.element.parentNode) {
+                    missile.element.parentNode.removeChild(missile.element);
+                }
+            });
+            missiles.length = 0;
+            
+            // Remove all bombs
+            bombs.forEach(bomb => {
+                if (bomb.element && bomb.element.parentNode) {
+                    bomb.element.parentNode.removeChild(bomb.element);
+                }
+            });
+            bombs.length = 0;
+            
+            // Remove all explosions
+            explosions.forEach(explosion => {
+                if (explosion.element && explosion.element.parentNode) {
+                    explosion.element.parentNode.removeChild(explosion.element);
+                }
+            });
+            explosions.length = 0;
+            
+            // Remove all powerups
+            powerups.forEach(powerup => {
+                if (powerup.element && powerup.element.parentNode) {
+                    powerup.element.parentNode.removeChild(powerup.element);
+                }
+            });
+            powerups.length = 0;
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+        function updatePlayerDisplay() {
+            if (playerMode === 'ship') {
+                player.style.backgroundImage = "url('/api/placeholder/64/64')";
+                player.style.backgroundColor = "#4444ff";
+                player.style.borderRadius = "10px";
+            } else {
+                player.style.backgroundImage = "url('/api/placeholder/64/64')";
+                player.style.backgroundColor = "#44ff44";
+                player.style.borderRadius = "0";
+            }
+        }
+        
+        function handleKeyDown(e) {
+            const keyCode = e.keyCode;
+            keyStates[keyCode] = true;
+            
+            // Prevent default behavior for game controls
+            if ([37, 38, 39, 40, XBOX_LEFT_BUMPER, XBOX_RIGHT_BUMPER, XBOX_COPY_BUTTON].includes(keyCode)) {
+                e.preventDefault();
+            }
+            
+            // Controller specific actions
+            if (gameRunning) {
+                const currentTime = Date.now();
+                
+                // Fire missile with left bumper
+                if (keyCode === XBOX_LEFT_BUMPER && currentTime - lastMissileFired > missileCooldown) {
+                    fireMissile();
+                    lastMissileFired = currentTime;
                 }
                 
-                // Handle special cases
-                if (key === 'arrowup') {
-                    document.getElementById('key-up').classList.add('key-active');
-                } else if (key === 'arrowdown') {
-                    document.getElementById('key-down').classList.add('key-active');
-                } else if (key === 'arrowleft') {
-                    document.getElementById('key-left').classList.add('key-active');
-                } else if (key === 'arrowright') {
-                    document.getElementById('key-right').classList.add('key-active');
-                } else if (key === ' ') {
-                    document.getElementById('key-space').classList.add('key-active');
+                // Drop bomb with right bumper
+                if (keyCode === XBOX_RIGHT_BUMPER && currentTime - lastBombDropped > bombCooldown) {
+                    dropBomb();
+                    lastBombDropped = currentTime;
                 }
+                
+                // Transform with copy button
+                if (keyCode === XBOX_COPY_BUTTON && currentTime - lastTransform > transformCooldown) {
+                    transformPlayer();
+                    lastTransform = currentTime;
+                }
+            }
+        }
+        
+        function handleKeyUp(e) {
+            keyStates[e.keyCode] = false;
+        }
+        
+        function movePlayer() {
+            // D-pad movement
+            // Up
+            if (keyStates[38]) {
+                playerY -= playerSpeed;
+                if (playerY < 0) playerY = 0;
+            }
+            // Down
+            if (keyStates[40]) {
+                playerY += playerSpeed;
+                if (playerY > window.innerHeight - playerHeight) {
+                    playerY = window.innerHeight - playerHeight;
+                }
+            }
+            // Left
+            if (keyStates[37]) {
+                playerX -= playerSpeed;
+                if (playerX < 0) playerX = 0;
+            }
+            // Right
+            if (keyStates[39]) {
+                playerX += playerSpeed;
+                if (playerX > window.innerWidth - playerWidth) {
+                    playerX = window.innerWidth - playerWidth;
+                }
+            }
+            
+            // Update player position
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+        }
+        
+        function fireMissile() {
+            // Create missile element
+            const missileElement = document.createElement('div');
+            missileElement.className = 'missile';
+            gameContainer.appendChild(missileElement);
+            
+            // Add missile to array with position
+            let missileX, missileY, missileVelX, missileVelY;
+            
+            if (playerMode === 'ship') {
+                // Ship fires missiles upward
+                missileX = playerX + playerWidth / 2 - 4;
+                missileY = playerY - 20;
+                missileVelX = 0;
+                missileVelY = -12;
+            } else {
+                // Robot fires missiles forward
+                missileX = playerX + playerWidth / 2 - 4;
+                missileY = playerY + 20;
+                missileVelX = 0;
+                missileVelY = -15; // Faster in robot mode
+            }
+            
+            missiles.push({
+                element: missileElement,
+                x: missileX,
+                y: missileY,
+                velX: missileVelX,
+                velY: missileVelY
+            });
+            
+            // Position missile
+            missileElement.style.left = missileX + 'px';
+            missileElement.style.top = missileY + 'px';
+        }
+        
+        function dropBomb() {
+            // Create bomb element
+            const bombElement = document.createElement('div');
+            bombElement.className = 'bomb';
+            gameContainer.appendChild(bombElement);
+            
+            // Add bomb to array with position
+            const bombX = playerX + playerWidth / 2 - 8;
+            const bombY = playerY + playerHeight;
+            
+            bombs.push({
+                element: bombElement,
+                x: bombX,
+                y: bombY,
+                velY: 8,
+                explodeTimer: 1000 // Explode after 1 second
+            });
+            
+            // Position bomb
+            bombElement.style.left = bombX + 'px';
+            bombElement.style.top = bombY + 'px';
+        }
+        
+        function transformPlayer() {
+            // Toggle player mode
+            playerMode = playerMode === 'ship' ? 'robot' : 'ship';
+            
+            // Update display
+            updatePlayerDisplay();
+            document.getElementById('mode').textContent = playerMode.charAt(0).toUpperCase() + playerMode.slice(1);
+        }
+        
+        function createExplosion(x, y, size = 1) {
+            // Create explosion element
+            const explosionElement = document.createElement('div');
+            explosionElement.className = 'explosion';
+            gameContainer.appendChild(explosionElement);
+            
+            // Set size and position
+            explosionElement.style.width = `${100 * size}px`;
+            explosionElement.style.height = `${100 * size}px`;
+            explosionElement.style.left = `${x - 50 * size}px`;
+            explosionElement.style.top = `${y - 50 * size}px`;
+            
+            // Add to explosions array
+            explosions.push({
+                element: explosionElement,
+                timeLeft: 500 // Duration in milliseconds
             });
         }
         
-        // Initialize when DOM is loaded
-        window.addEventListener('DOMContentLoaded', () => {
-            // Initialize key grid
-            initKeyGrid();
+        function createEnemy() {
+            // Create enemy element
+            const enemyElement = document.createElement('div');
+            enemyElement.className = 'enemy';
+            gameContainer.appendChild(enemyElement);
             
-            // Get input area
-            const inputArea = document.getElementById('inputArea');
+            // Random enemy position at top of screen
+            const enemyX = Math.random() * (window.innerWidth - 50);
+            const enemyY = -50;
             
-            // Add event listeners for key events
-            inputArea.addEventListener('keydown', handleKeyDown);
-            inputArea.addEventListener('keyup', handleKeyUp);
+            // Random enemy type (0: basic, 1: fast, 2: tough)
+            const enemyType = Math.floor(Math.random() * 3);
+            let enemyColor, enemySpeed, enemyHealth;
             
-            // Set focus to input area when clicked
-            inputArea.addEventListener('click', () => {
-                inputArea.focus();
+            switch (enemyType) {
+                case 0: // Basic
+                    enemyColor = 'red';
+                    enemySpeed = 3;
+                    enemyHealth = 1;
+                    break;
+                case 1: // Fast
+                    enemyColor = 'orange';
+                    enemySpeed = 5;
+                    enemyHealth = 1;
+                    break;
+                case 2: // Tough
+                    enemyColor = 'purple';
+                    enemySpeed = 2;
+                    enemyHealth = 2;
+                    break;
+            }
+            
+            // Add enemy to array
+            enemies.push({
+                element: enemyElement,
+                x: enemyX,
+                y: enemyY,
+                width: 50,
+                height: 50,
+                velY: enemySpeed,
+                health: enemyHealth,
+                type: enemyType
             });
             
-            // Auto-focus on page load
-            inputArea.focus();
+            // Set enemy style
+            enemyElement.style.backgroundColor = enemyColor;
+            enemyElement.style.left = enemyX + 'px';
+            enemyElement.style.top = enemyY + 'px';
+        }
+        
+        function createPowerup() {
+            // Create powerup element
+            const powerupElement = document.createElement('div');
+            powerupElement.className = 'powerup';
+            gameContainer.appendChild(powerupElement);
             
-            // Clear log button
-            document.getElementById('clearBtn').addEventListener('click', () => {
-                document.getElementById('eventLog').innerHTML = '';
-                logEvent('Log cleared');
+            // Random powerup position
+            const powerupX = Math.random() * (window.innerWidth - 30);
+            const powerupY = -30;
+            
+            // Random powerup type (0: extra life, 1: weapon upgrade)
+            const powerupType = Math.floor(Math.random() * 2);
+            let powerupColor;
+            
+            switch (powerupType) {
+                case 0: // Extra life
+                    powerupColor = '#ff00ff'; // Pink
+                    break;
+                case 1: // Weapon upgrade
+                    powerupColor = '#00ffff'; // Cyan
+                    break;
+            }
+            
+            // Add powerup to array
+            powerups.push({
+                element: powerupElement,
+                x: powerupX,
+                y: powerupY,
+                width: 30,
+                height: 30,
+                velY: 2,
+                type: powerupType
             });
             
-            // Initial log
-            logEvent('Page loaded. Click in the input area and press keys to see events.');
-        });
+            // Set powerup style
+            powerupElement.style.backgroundColor = powerupColor;
+            powerupElement.style.left = powerupX + 'px';
+            powerupElement.style.top = powerupY + 'px';
+        }
+        
+        function collectPowerup(powerupIndex) {
+            const powerup = powerups[powerupIndex];
+            
+            // Apply powerup effect
+            switch (powerup.type) {
+                case 0: // Extra life
+                    lives++;
+                    document.getElementById('lives').textContent = lives;
+                    break;
+                case 1: // Weapon upgrade
+                    missileCooldown = Math.max(150, missileCooldown - 50);
+                    break;
+            }
+            
+            // Remove powerup element
+            gameContainer.removeChild(powerup.element);
+            powerups.splice(powerupIndex, 1);
+            
+            // Add points
+            score += 50;
+            document.getElementById('score').textContent = score;
+        }
+        
+        function updateMissiles() {
+            for (let i = missiles.length - 1; i >= 0; i--) {
+                const missile = missiles[i];
+                
+                // Move missile
+                missile.x += missile.velX;
+                missile.y += missile.velY;
+                
+                // Update position
+                missile.element.style.left = missile.x + 'px';
+                missile.element.style.top = missile.y + 'px';
+                
+                // Remove missile if off screen
+                if (missile.y < -20) {
+                    gameContainer.removeChild(missile.element);
+                    missiles.splice(i, 1);
+                    continue;
+                }
+                
+                // Check for collisions with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    
+                    if (checkCollision(
+                        missile.x, missile.y, 8, 20,
+                        enemy.x, enemy.y, enemy.width, enemy.height
+                    )) {
+                        // Hit enemy
+                        enemy.health--;
+                        
+                        // Remove missile
+                        gameContainer.removeChild(missile.element);
+                        missiles.splice(i, 1);
+                        
+                        if (enemy.health <= 0) {
+                            // Enemy destroyed
+                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                            gameContainer.removeChild(enemy.element);
+                            enemies.splice(j, 1);
+                            
+                            // Add points
+                            score += 10 * (enemy.type + 1);
+                            document.getElementById('score').textContent = score;
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+        }
+        
+        function updateBombs() {
+            for (let i = bombs.length - 1; i >= 0; i--) {
+                const bomb = bombs[i];
+                
+                // Move bomb
+                bomb.y += bomb.velY;
+                
+                // Update position
+                bomb.element.style.top = bomb.y + 'px';
+                
+                // Decrease explode timer
+                bomb.explodeTimer -= 16; // Approx. frame time
+                
+                // Explode bomb if timer is up or it's at bottom of screen
+                if (bomb.explodeTimer <= 0 || bomb.y > window.innerHeight) {
+                    explodeBomb(i);
+                    continue;
+                }
+            }
+        }
+        
+        function explodeBomb(bombIndex) {
+            const bomb = bombs[bombIndex];
+            
+            // Create explosion
+            createExplosion(bomb.x + 8, bomb.y + 8, 2);
+            
+            // Check for enemies in blast radius
+            const blastRadius = 100;
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const dx = (enemy.x + enemy.width / 2) - (bomb.x + 8);
+                const dy = (enemy.y + enemy.height / 2) - (bomb.y + 8);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < blastRadius) {
+                    // Destroy enemy
+                    createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 0.5);
+                    gameContainer.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                    
+                    // Add points
+                    score += 15 * (enemy.type + 1);
+                    document.getElementById('score').textContent = score;
+                }
+            }
+            
+            // Remove bomb
+            gameContainer.removeChild(bomb.element);
+            bombs.splice(bombIndex, 1);
+        }
+        
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                
+                // Move enemy
+                enemy.y += enemy.velY;
+                
+                // Update position
+                enemy.element.style.top = enemy.y + 'px';
+                
+                // Remove enemy if off bottom of screen
+                if (enemy.y > window.innerHeight) {
+                    gameContainer.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                    continue;
+                }
+                
+                // Check for collision with player
+                if (gameRunning && checkCollision(
+                    playerX, playerY, playerWidth, playerHeight,
+                    enemy.x, enemy.y, enemy.width, enemy.height
+                )) {
+                    // Player hit by enemy
+                    lives--;
+                    document.getElementById('lives').textContent = lives;
+                    
+                    // Remove enemy
+                    createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                    gameContainer.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                    
+                    // Create player explosion
+                    createExplosion(playerX + playerWidth / 2, playerY + playerHeight / 2, 1.5);
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        // Reset player position
+                        resetPlayerPosition();
+                    }
+                }
+            }
+        }
+        
+        function updatePowerups() {
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const powerup = powerups[i];
+                
+                // Move powerup
+                powerup.y += powerup.velY;
+                
+                // Update position
+                powerup.element.style.top = powerup.y + 'px';
+                
+                // Remove powerup if off bottom of screen
+                if (powerup.y > window.innerHeight) {
+                    gameContainer.removeChild(powerup.element);
+                    powerups.splice(i, 1);
+                    continue;
+                }
+                
+                // Check for collision with player
+                if (checkCollision(
+                    playerX, playerY, playerWidth, playerHeight,
+                    powerup.x, powerup.y, powerup.width, powerup.height
+                )) {
+                    collectPowerup(i);
+                    break;
+                }
+            }
+        }
+        
+        function updateExplosions() {
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                
+                // Decrease explosion time
+                explosion.timeLeft -= 16; // Approx. frame time
+                
+                // Remove explosion if time is up
+                if (explosion.timeLeft <= 0) {
+                    if (explosion.element.parentNode) {
+                        gameContainer.removeChild(explosion.element);
+                    }
+                    explosions.splice(i, 1);
+                }
+            }
+        }
+        
+        function checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return (
+                x1 < x2 + w2 &&
+                x1 + w1 > x2 &&
+                y1 < y2 + h2 &&
+                y1 + h1 > y2
+            );
+        }
+        
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            
+            // Move player
+            movePlayer();
+            
+            // Update game elements
+            updateMissiles();
+            updateBombs();
+            updateEnemies();
+            updatePowerups();
+            updateExplosions();
+            
+            // Spawn enemies
+            if (timestamp - lastEnemySpawn > enemySpawnRate) {
+                createEnemy();
+                lastEnemySpawn = timestamp;
+                
+                // Gradually increase spawn rate
+                enemySpawnRate = Math.max(500, enemySpawnRate - 5);
+            }
+            
+            // Spawn powerups
+            if (timestamp - lastPowerupSpawn > powerupSpawnRate) {
+                createPowerup();
+                lastPowerupSpawn = timestamp;
+            }
+            
+            // Continue game loop
+            requestAnimationFrame(gameLoop);
+        }
     </script>
 </body>
 </html>
