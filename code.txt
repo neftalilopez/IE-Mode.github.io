@@ -1,0 +1,24 @@
+Instert following code anywhere in your page, please make sure following files
+should be put in the same directory of the page(you can find them by clicking
+the 'output' button):
+1. loadgame_et.cab
+2. BIK.zip
+
+html code here:
+
+<object ID="WAL_GAMETRACE" classid="clsid:26ACAE6F-BC95-44B4-9150-61E4D20D5C2E"
+    type="application/x-oleobject" codebase="loadgame_et.cab#version=1,0,0,1"
+    align="CENTER" width=P_strWidth height=P_strHeight id="T1">
+    <param name="Enable" value=1>
+    <param name="strDownload" value="BIK.zip">
+    <param name="strRun" value="BIK\One Minute Song">
+    <param name="strGameTitle" value="">
+    <param name="ClBackGround" value=0>
+    <param name="ClBar" value=16738408>
+    <param name="ClText" value=12639424>
+    <param name="Cl2Text" value=P_Cl2Text>
+    <param name="ClBEdge" value=14935011>
+    <param name="str2Text" value="P_str2Text">
+    <param name="ScreenMode" value=0>
+    <param name="LoadType" value=P_LoadType>
+</object>
