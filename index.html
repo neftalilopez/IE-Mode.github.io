@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebM Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #videoPlayer {
+            margin-top: 20px;
+            max-width: 100%;
+            display: none;
+        }
+        .cast-button {
+            background-color: #2196F3;
+        }
+        .cast-button:hover {
+            background-color: #0b7dda;
+        }
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .qr-container {
+            margin-top: 20px;
+            display: none;
+        }
+        #qrCode {
+            margin: 0 auto;
+            max-width: 200px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="https://drive.google.com/file/d/14UI15zXlLkRSdEspTxjxczPqG0_bSQ1L/view?usp=sharing">Click to view my Google Drive file</a>
+        <br>
+        <br>
+        <a href="https://flashplayer.fullstacks.net/?kind=Flash_Emulator">Flash Emulator</a>
+        <br>
+        <a href="game.html">Play Cosmic Defender</a>
+        <br>
+       <a href="https://dn721806.ca.archive.org/0/items/have-rocket-will-travel-colorized/Have%20Rocket-Will%20Travel.mp4">Play 3 Stooges Video</a>
+        <button id="playButton">Play 3 Stooges Video</button>
+        <div class="controls">
+            <button id="castButton" class="cast-button">Cast to Device</button>
+            <button id="xboxLinkButton" class="cast-button">Xbox Link</button>
+            <button id="shareQRButton" class="cast-button">Share via QR Code</button>
+        </div>
+        <video id="videoPlayer" controls playsinline></video>
+        
+        <div class="qr-container" id="qrContainer">
+            <h3>Scan QR Code to Watch on Another Device</h3>
+            <div id="qrCode"></div>
+            <p>Or use this direct link:</p>
+            <a id="directLink" href="#" target="_blank"></a>
+        </div>
+    </div>
+    
+    <!-- Google Cast SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+    
+    <script>
+        // Video URL
+        const videoUrl = 'https://dn721806.ca.archive.org/0/items/have-rocket-will-travel-colorized/Have%20Rocket-Will%20Travel.mp4';
+        
+        // Elements
+        const videoPlayer = document.getElementById('videoPlayer');
+        const playButton = document.getElementById('playButton');
+        const castButton = document.getElementById('castButton');
+        const xboxLinkButton = document.getElementById('xboxLinkButton');
+        const shareQRButton = document.getElementById('shareQRButton');
+        const qrContainer = document.getElementById('qrContainer');
+        const directLink = document.getElementById('directLink');
+        
+        // Initialize page URL for sharing
+        const pageUrl = window.location.href;
+        
+        // Play video locally
+        playButton.addEventListener('click', function() {
+            videoPlayer.src = videoUrl;
+            videoPlayer.style.display = 'block';
+            videoPlayer.play();
+        });
+        
+        // Generate QR code for sharing
+        shareQRButton.addEventListener('click', function() {
+            qrContainer.style.display = 'block';
+            
+            // Clear previous QR code if exists
+            document.getElementById('qrCode').innerHTML = '';
+            
+            // Generate QR code with the current page URL
+            new QRCode(document.getElementById('qrCode'), {
+                text: pageUrl,
+                width: 200,
+                height: 200
+            });
+            
+            // Update direct link
+            directLink.href = pageUrl;
+            directLink.textContent = pageUrl;
+        });
+        
+        // Xbox Link - Creates a direct video link for Xbox
+        xboxLinkButton.addEventListener('click', function() {
+            // Create a simple page with just the video player
+            const xboxPlayerUrl = videoUrl;
+            
+            // Show instructions for Xbox users
+            const xboxInstructions = `
+                Xbox browsers often block local file access for security reasons.
+                
+                To watch on Xbox:
+                1. On your Xbox, open Microsoft Edge
+                2. Go directly to the video URL: ${xboxPlayerUrl}
+                3. The video should open directly in the browser
+                
+                Or you can use the Xbox Media Player app to play the video from a USB drive.
+            `;
+            alert(xboxInstructions);
+            
+            // Open the direct video URL in a new tab
+            window.open(videoUrl, '_blank');
+        });
+        
+        // Initialize Google Cast API
+        window.__onGCastApiAvailable = function(isAvailable) {
+            if (isAvailable) {
+                initializeCastApi();
+            }
+        };
+        
+        // Setup Cast API
+        function initializeCastApi() {
+            cast.framework.CastContext.getInstance().setOptions({
+                receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+            });
+            
+            // Add cast functionality to button
+            castButton.addEventListener('click', function() {
+                const castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+                
+                if (castSession) {
+                    // Create media info
+                    const mediaInfo = new chrome.cast.media.MediaInfo(videoUrl, 'video/mp4');
+                    mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+                    mediaInfo.metadata.title = '3 Stooges: Have Rocket-Will Travel';
+                    
+                    // Create request
+                    const request = new chrome.cast.media.LoadRequest(mediaInfo);
+                    
+                    // Load media
+                    castSession.loadMedia(request).then(
+                        function() {
+                            console.log('Cast media loaded successfully');
+                        },
+                        function(errorCode) {
+                            console.error('Error casting media. Error code: ' + errorCode);
+                        }
+                    );
+                } else {
+                    // Show cast dialog if not connected
+                    cast.framework.CastContext.getInstance().requestSession();
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

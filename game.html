@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Defender</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('/api/placeholder/800/1600');
+            background-size: cover;
+            overflow: hidden;
+        }
+        
+        #player {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 10;
+            transition: transform 0.1s ease-out;
+        }
+        
+        /* Ship design with wings */
+        .ship {
+            clip-path: polygon(
+                50% 0%,    /* Top point */
+                0% 100%,   /* Bottom left */
+                25% 70%,   /* Inner left */
+                75% 70%,   /* Inner right */
+                100% 100%  /* Bottom right */
+            );
+            background-color: #4444ff !important;
+            box-shadow: 0 0 15px #88f;
+        }
+        
+        /* Robot design */
+        .robot {
+            clip-path: polygon(
+                30% 0%,    /* Top left */
+                70% 0%,    /* Top right */
+                100% 30%,  /* Right top */
+                100% 70%,  /* Right bottom */
+                70% 100%,  /* Bottom right */
+                30% 100%,  /* Bottom left */
+                0% 70%,    /* Left bottom */
+                0% 30%     /* Left top */
+            );
+            background-color: #44ff44 !important;
+            box-shadow: 0 0 15px #8f8;
+        }
+        
+        .enemy {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            border-radius: 5px;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        
+        .missile {
+            position: absolute;
+            width: 8px;
+            height: 20px;
+            background-color: #00ff00;
+            border-radius: 4px;
+            z-index: 5;
+            box-shadow: 0 0 10px #0f0;
+        }
+        
+        .bomb {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #ff9900;
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: 0 0 10px #f90;
+        }
+        
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-color: transparent;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,0,0,0.6) 50%, rgba(0,0,0,0) 80%);
+            z-index: 15;
+            animation: expand 0.5s ease-out forwards;
+        }
+        
+        @keyframes expand {
+            0% {
+                transform: scale(0.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
+        #gameStats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            z-index: 20;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 20;
+        }
+        
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            display: none;
+        }
+        
+        #gameOverScreen h1 {
+            color: #ff0000;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        #gameOverScreen button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #107C10;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+        
+        #startScreen h1 {
+            color: #00ff00;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #0f0;
+        }
+        
+        #startScreen button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #107C10;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        #startScreen button:hover {
+            background-color: #1aaa1a;
+            transform: scale(1.05);
+        }
+        
+        .powerup {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #00ffff;
+            border-radius: 50%;
+            z-index: 5;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 15px #0ff;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        #soundToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            z-index: 20;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="player"></div>
+        
+        <div id="gameStats">
+            Score: <span id="score">0</span> | 
+            Lives: <span id="lives">3</span> | 
+            Mode: <span id="mode">Ship</span>
+        </div>
+        
+        <div id="controls">
+            <p>D-Pad/Arrow Keys: Move</p>
+            <p>Left Bumper (200)/Space: Fire Missile</p>
+            <p>Right Bumper (199)/B Key: Drop Bomb</p>
+            <p>Copy Button (208)/T Key: Transform</p>
+        </div>
+        
+        <div id="soundToggle">🔊 Sound & Music: ON</div>
+        
+        <div id="startScreen">
+            <h1>COSMIC DEFENDER</h1>
+            <p>D-Pad to move, buttons to attack</p>
+            <button id="startButton">START GAME</button>
+        </div>
+        
+        <div id="gameOverScreen">
+            <h1>GAME OVER</h1>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button id="restartButton">Play Again</button>
+        </div>
+    </div>
+<script>
+        // Game variables
+        let player;
+        let gameContainer;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = false;
+        let playerMode = 'ship'; // 'ship' or 'robot'
+        let soundEnabled = true; // Sound toggle
+        
+        // Game state arrays
+        let enemies = [];
+        let missiles = [];
+        let bombs = [];
+        let powerups = [];
+        let explosions = [];
+        
+        // Movement state
+        const keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+        
+        // Game settings
+        const settings = {
+            playerSpeed: 5,
+            missileSpeed: 8,
+            bombSpeed: 3,
+            enemySpeed: 2,
+            enemyShootChance: 0.01, // 1% chance per frame
+            enemySpawnRate: 2000, // ms between spawns
+            powerupSpawnRate: 15000, // ms between powerup spawns
+            powerupChance: 0.5 // 50% chance for extra life vs. bomb powerup
+        };
+        
+        // Timers
+        let enemySpawnTimer;
+        let powerupSpawnTimer;
+        
+        // Audio objects
+        const sounds = {
+            missile: new Audio(),
+            bomb: new Audio(),
+            explosion: new Audio(),
+            powerup: new Audio(),
+            playerHit: new Audio(),
+            transform: new Audio(),
+            gameStart: new Audio(),
+            gameOver: new Audio(),
+            background: new Audio()
+        };
+        
+        // Initialize sound sources
+        sounds.missile.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/laser.mp3";
+        sounds.bomb.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/bomb.mp3";
+        sounds.explosion.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/explosion.mp3";
+        sounds.powerup.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/powerup.mp3";
+        sounds.playerHit.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/hit.mp3";
+        sounds.transform.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/transform.mp3";
+        sounds.gameStart.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/start.mp3";
+        sounds.gameOver.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/gameover.mp3";
+        sounds.background.src = "https://cdnjs.cloudflare.com/ajax/libs/sound-effects/1.0.2/bg-music.mp3";
+        
+        // Configure background music for looping
+        sounds.background.volume = 0.5; // Lower volume for background music
+        sounds.background.loop = true;
+
+        // DOM elements
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const soundToggle = document.getElementById('soundToggle');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const modeElement = document.getElementById('mode');
+        const finalScoreElement = document.getElementById('finalScore');
+// Game initialization
+        function initGame() {
+            player = document.getElementById('player');
+            gameContainer = document.getElementById('gameContainer');
+            
+            // Clear any existing game elements
+            clearGameElements();
+            
+            // Set initial player position
+            const playerX = (gameContainer.clientWidth / 2) - 32;
+            const playerY = gameContainer.clientHeight - 150;
+            player.style.left = playerX + 'px';
+            player.style.bottom = '100px';
+            
+            // Ensure clean player appearance
+            player.className = '';
+            player.classList.add('ship');
+            
+            // Reset game state
+            score = 0;
+            lives = 3;
+            playerMode = 'ship';
+            enemies = [];
+            missiles = [];
+            bombs = [];
+            powerups = [];
+            explosions = [];
+            
+            // Update UI
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+            modeElement.textContent = playerMode.charAt(0).toUpperCase() + playerMode.slice(1);
+            
+            // Play start sound
+            if (soundEnabled) {
+                sounds.gameStart.play();
+                sounds.background.play();
+            }
+            
+            // Hide start screen
+            startScreen.style.display = 'none';
+            
+            // Start enemy spawner
+            enemySpawnTimer = setInterval(spawnEnemy, settings.enemySpawnRate);
+            
+            // Start powerup spawner
+            powerupSpawnTimer = setInterval(spawnPowerup, settings.powerupSpawnRate);
+            
+            // Start game loop
+            gameRunning = true;
+            gameLoop();
+        }
+        
+        // Clear game elements
+        function clearGameElements() {
+            // Remove all enemies
+            document.querySelectorAll('.enemy').forEach(enemy => enemy.remove());
+            
+            // Remove all missiles
+            document.querySelectorAll('.missile').forEach(missile => missile.remove());
+            
+            // Remove all bombs
+            document.querySelectorAll('.bomb').forEach(bomb => bomb.remove());
+            
+            // Remove all powerups
+            document.querySelectorAll('.powerup').forEach(powerup => powerup.remove());
+            
+            // Remove all explosions
+            document.querySelectorAll('.explosion').forEach(explosion => explosion.remove());
+        }
+// Spawn enemy
+        function spawnEnemy() {
+            if (!gameRunning) return;
+            
+            const enemy = document.createElement('div');
+            enemy.className = 'enemy';
+            
+            // Random position at top of screen
+            const enemyX = Math.random() * (gameContainer.clientWidth - 50);
+            enemy.style.left = enemyX + 'px';
+            enemy.style.top = '0px';
+            
+            gameContainer.appendChild(enemy);
+            
+            // Add to enemies array
+            enemies.push({
+                element: enemy,
+                x: enemyX,
+                y: 0,
+                width: 50,
+                height: 50
+            });
+        }
+        
+        // Spawn enemy bullet
+        function spawnEnemyBullet(enemy) {
+            const bullet = document.createElement('div');
+            bullet.className = 'missile';
+            bullet.style.backgroundColor = 'red';
+            
+            // Position at enemy
+            const bulletX = enemy.x + 25 - 4; // Center of enemy minus half of bullet width
+            const bulletY = enemy.y + 50; // Bottom of enemy
+            
+            bullet.style.left = bulletX + 'px';
+            bullet.style.top = bulletY + 'px';
+            
+            gameContainer.appendChild(bullet);
+            
+            // Add to missiles array with downward direction
+            missiles.push({
+                element: bullet,
+                x: bulletX,
+                y: bulletY,
+                width: 8,
+                height: 20,
+                speed: settings.missileSpeed,
+                direction: 'down',
+                friendly: false
+            });
+        }
+        
+        // Spawn powerup
+        function spawnPowerup() {
+            if (!gameRunning) return;
+            
+            const powerup = document.createElement('div');
+            powerup.className = 'powerup';
+            
+            // Determine powerup type (extra life or bomb)
+            const isExtraLife = Math.random() < settings.powerupChance;
+            
+            if (isExtraLife) {
+                powerup.style.backgroundColor = '#ff00ff'; // Pink for extra life
+                powerup.dataset.type = 'life';
+            } else {
+                powerup.style.backgroundColor = '#00ffff'; // Cyan for bomb
+                powerup.dataset.type = 'bomb';
+            }
+            
+            // Random position
+            const powerupX = Math.random() * (gameContainer.clientWidth - 30);
+            const powerupY = Math.random() * (gameContainer.clientHeight / 2);
+            
+            powerup.style.left = powerupX + 'px';
+            powerup.style.top = powerupY + 'px';
+            
+            gameContainer.appendChild(powerup);
+            
+            // Add to powerups array
+            powerups.push({
+                element: powerup,
+                x: powerupX,
+                y: powerupY,
+                width: 30,
+                height: 30,
+                type: isExtraLife ? 'life' : 'bomb'
+            });
+        }
+        
+        // Fire missile
+        function fireMissile() {
+            if (!gameRunning) return;
+            
+            const missile = document.createElement('div');
+            missile.className = 'missile';
+            
+            // Get player position
+            const playerRect = player.getBoundingClientRect();
+            const playerX = playerRect.left;
+            const playerY = playerRect.top;
+            
+            // Position missile at top center of player
+            const missileX = playerX + (playerRect.width / 2) - 4; // Center of player minus half of missile width
+            const missileY = playerY;
+            
+            missile.style.left = missileX + 'px';
+            missile.style.top = missileY + 'px';
+            
+            gameContainer.appendChild(missile);
+            
+            // Add to missiles array
+            missiles.push({
+                element: missile,
+                x: missileX,
+                y: missileY,
+                width: 8,
+                height: 20,
+                speed: settings.missileSpeed,
+                direction: 'up',
+                friendly: true
+            });
+            
+            // Play sound
+            if (soundEnabled) {
+                sounds.missile.currentTime = 0;
+                sounds.missile.play();
+            }
+        }
+        
+        // Drop bomb
+        function dropBomb() {
+            if (!gameRunning) return;
+            
+            const bomb = document.createElement('div');
+            bomb.className = 'bomb';
+            
+            // Get player position
+            const playerRect = player.getBoundingClientRect();
+            const playerX = playerRect.left;
+            const playerY = playerRect.top;
+            
+            // Position bomb at bottom center of player
+            const bombX = playerX + (playerRect.width / 2) - 8; // Center of player minus half of bomb width
+            const bombY = playerY + playerRect.height;
+            
+            bomb.style.left = bombX + 'px';
+            bomb.style.top = bombY + 'px';
+            
+            gameContainer.appendChild(bomb);
+            
+            // Add to bombs array
+            bombs.push({
+                element: bomb,
+                x: bombX,
+                y: bombY,
+                width: 16,
+                height: 16,
+                speed: settings.bombSpeed
+            });
+            
+            // Play sound
+            if (soundEnabled) {
+                sounds.bomb.currentTime = 0;
+                sounds.bomb.play();
+            }
+        }
+// Transform player
+        function transformPlayer() {
+            if (!gameRunning) return;
+            
+            // Toggle player mode
+            if (playerMode === 'ship') {
+                playerMode = 'robot';
+                player.className = '';
+                player.classList.add('robot');
+            } else {
+                playerMode = 'ship';
+                player.className = '';
+                player.classList.add('ship');
+            }
+            
+            // Update UI
+            modeElement.textContent = playerMode.charAt(0).toUpperCase() + playerMode.slice(1);
+            
+            // Play sound
+            if (soundEnabled) {
+                sounds.transform.currentTime = 0;
+                sounds.transform.play();
+            }
+        }
+        
+        // Create explosion
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            
+            explosion.style.left = (x - 50) + 'px'; // Center explosion
+            explosion.style.top = (y - 50) + 'px';
+            
+            gameContainer.appendChild(explosion);
+            
+            // Remove explosion after animation finishes
+            setTimeout(() => {
+                if (explosion.parentNode) {
+                    explosion.parentNode.removeChild(explosion);
+                }
+            }, 500);
+            
+            // Play sound
+            if (soundEnabled) {
+                sounds.explosion.currentTime = 0;
+                sounds.explosion.play();
+            }
+        }
+        
+        // Check for collisions
+        function checkCollisions() {
+            // Player rect
+            const playerRect = player.getBoundingClientRect();
+            const playerObj = {
+                x: playerRect.left,
+                y: playerRect.top,
+                width: playerRect.width,
+                height: playerRect.height
+            };
+            
+            // Check missile collisions with enemies
+            missiles.forEach((missile, mIndex) => {
+                // Skip enemy missiles
+                if (!missile.friendly) return;
+                
+                const missileRect = missile.element.getBoundingClientRect();
+                
+                enemies.forEach((enemy, eIndex) => {
+                    const enemyRect = enemy.element.getBoundingClientRect();
+                    
+                    // Check if missile hit enemy
+                    if (
+                        missileRect.left < enemyRect.right &&
+                        missileRect.right > enemyRect.left &&
+                        missileRect.top < enemyRect.bottom &&
+                        missileRect.bottom > enemyRect.top
+                    ) {
+                        // Remove enemy
+                        if (enemy.element.parentNode) {
+                            enemy.element.parentNode.removeChild(enemy.element);
+                        }
+                        enemies.splice(eIndex, 1);
+                        
+                        // Remove missile
+                        if (missile.element.parentNode) {
+                            missile.element.parentNode.removeChild(missile.element);
+                        }
+                        missiles.splice(mIndex, 1);
+                        
+                        // Create explosion
+                        createExplosion(enemyRect.left + enemyRect.width / 2, enemyRect.top + enemyRect.height / 2);
+                        
+                        // Increase score
+                        score += 10;
+                        scoreElement.textContent = score;
+                        
+                        return;
+                    }
+                });
+            });
+            
+            // Check bomb collisions with enemies
+            bombs.forEach((bomb, bIndex) => {
+                const bombRect = bomb.element.getBoundingClientRect();
+                
+                enemies.forEach((enemy, eIndex) => {
+                    const enemyRect = enemy.element.getBoundingClientRect();
+                    
+                    // Check if bomb hit enemy
+                    if (
+                        bombRect.left < enemyRect.right &&
+                        bombRect.right > enemyRect.left &&
+                        bombRect.top < enemyRect.bottom &&
+                        bombRect.bottom > enemyRect.top
+                    ) {
+                        // Remove enemy
+                        if (enemy.element.parentNode) {
+                            enemy.element.parentNode.removeChild(enemy.element);
+                        }
+                        enemies.splice(eIndex, 1);
+                        
+                        // Create explosion (but don't remove bomb - it continues)
+                        createExplosion(enemyRect.left + enemyRect.width / 2, enemyRect.top + enemyRect.height / 2);
+                        
+                        // Increase score
+                        score += 15;
+                        scoreElement.textContent = score;
+                        
+                        return;
+                    }
+                });
+            });
+// Check enemy missiles collisions with player
+            missiles.forEach((missile, mIndex) => {
+                // Skip player missiles
+                if (missile.friendly) return;
+                
+                const missileRect = missile.element.getBoundingClientRect();
+                
+                // Check if missile hit player
+                if (
+                    missileRect.left < playerRect.right &&
+                    missileRect.right > playerRect.left &&
+                    missileRect.top < playerRect.bottom &&
+                    missileRect.bottom > playerRect.top
+                ) {
+                    // Remove missile
+                    if (missile.element.parentNode) {
+                        missile.element.parentNode.removeChild(missile.element);
+                    }
+                    missiles.splice(mIndex, 1);
+                    
+                    // Player hit effect
+                    playerHit();
+                    
+                    return;
+                }
+            });
+            
+            // Check enemy collisions with player
+            enemies.forEach((enemy, eIndex) => {
+                const enemyRect = enemy.element.getBoundingClientRect();
+                
+                // Check if enemy hit player
+                if (
+                    enemyRect.left < playerRect.right &&
+                    enemyRect.right > playerRect.left &&
+                    enemyRect.top < playerRect.bottom &&
+                    enemyRect.bottom > playerRect.top
+                ) {
+                    // Remove enemy
+                    if (enemy.element.parentNode) {
+                        enemy.element.parentNode.removeChild(enemy.element);
+                    }
+                    enemies.splice(eIndex, 1);
+                    
+                    // Create explosion
+                    createExplosion(enemyRect.left + enemyRect.width / 2, enemyRect.top + enemyRect.height / 2);
+                    
+                    // Player hit effect
+                    playerHit();
+                    
+                    return;
+                }
+            });
+            
+            // Check powerup collisions with player
+            powerups.forEach((powerup, pIndex) => {
+                const powerupRect = powerup.element.getBoundingClientRect();
+                
+                // Check if powerup hit player
+                if (
+                    powerupRect.left < playerRect.right &&
+                    powerupRect.right > playerRect.left &&
+                    powerupRect.top < playerRect.bottom &&
+                    powerupRect.bottom > playerRect.top
+                ) {
+                    // Remove powerup
+                    if (powerup.element.parentNode) {
+                        powerup.element.parentNode.removeChild(powerup.element);
+                    }
+                    
+                    // Apply powerup effect
+                    if (powerup.type === 'life') {
+                        lives++;
+                        livesElement.textContent = lives;
+                    } else {
+                        // Create large explosion that clears all enemies
+                        const centerX = gameContainer.clientWidth / 2;
+                        const centerY = gameContainer.clientHeight / 2;
+                        
+                        createExplosion(centerX, centerY);
+                        
+                        // Remove all enemies
+                        enemies.forEach(enemy => {
+                            if (enemy.element.parentNode) {
+                                enemy.element.parentNode.removeChild(enemy.element);
+                            }
+                        });
+                        enemies = [];
+                        
+                        // Remove all enemy bullets
+                        missiles.forEach((missile, i) => {
+                            if (!missile.friendly && missile.element.parentNode) {
+                                missile.element.parentNode.removeChild(missile.element);
+                                missiles.splice(i, 1);
+                            }
+                        });
+                        
+                        // Add bonus score
+                        score += 50;
+                        scoreElement.textContent = score;
+                    }
+                    
+                    powerups.splice(pIndex, 1);
+                    
+                    // Play sound
+                    if (soundEnabled) {
+                        sounds.powerup.currentTime = 0;
+                        sounds.powerup.play();
+                    }
+                    
+                    return;
+                }
+            });
+        }
+        
+        // Player hit
+        function playerHit() {
+            lives--;
+            livesElement.textContent = lives;
+            
+            // Play sound
+            if (soundEnabled) {
+                sounds.playerHit.currentTime = 0;
+                sounds.playerHit.play();
+            }
+            
+            // Flash player effect
+            player.style.opacity = '0.5';
+            setTimeout(() => {
+                player.style.opacity = '1';
+            }, 300);
+            
+            // Check game over
+            if (lives <= 0) {
+                endGame();
+            }
+        }
+        
+        // Update player position
+        function updatePlayerPosition() {
+            const playerRect = player.getBoundingClientRect();
+            let x = playerRect.left;
+            let y = playerRect.top;
+            
+            // Move based on keys
+            if (keys.left) {
+                x -= settings.playerSpeed;
+            }
+            if (keys.right) {
+                x += settings.playerSpeed;
+            }
+            if (keys.up) {
+                y -= settings.playerSpeed;
+            }
+            if (keys.down) {
+                y += settings.playerSpeed;
+            }
+            
+            // Boundaries
+            if (x < 0) {
+                x = 0;
+            }
+            if (x > gameContainer.clientWidth - playerRect.width) {
+                x = gameContainer.clientWidth - playerRect.width;
+            }
+            if (y < 0) {
+                y = 0;
+            }
+            if (y > gameContainer.clientHeight - playerRect.height) {
+                y = gameContainer.clientHeight - playerRect.height;
+            }
+            
+            // Update position
+            player.style.left = x + 'px';
+            player.style.top = y + 'px';
+        }
+// Update missiles
+        function updateMissiles() {
+            missiles.forEach((missile, index) => {
+                // Move missile
+                if (missile.direction === 'up') {
+                    missile.y -= missile.speed;
+                    missile.element.style.top = missile.y + 'px';
+                } else {
+                    missile.y += missile.speed;
+                    missile.element.style.top = missile.y + 'px';
+                }
+                
+                // Remove missile if it's off screen
+                if (
+                    missile.y < -20 ||
+                    missile.y > gameContainer.clientHeight
+                ) {
+                    if (missile.element.parentNode) {
+                        missile.element.parentNode.removeChild(missile.element);
+                    }
+                    missiles.splice(index, 1);
+                }
+            });
+        }
+        
+        // Update bombs
+        function updateBombs() {
+            bombs.forEach((bomb, index) => {
+                // Move bomb
+                bomb.y += bomb.speed;
+                bomb.element.style.top = bomb.y + 'px';
+                
+                // Remove bomb if it's off screen
+                if (bomb.y > gameContainer.clientHeight) {
+                    if (bomb.element.parentNode) {
+                        bomb.element.parentNode.removeChild(bomb.element);
+                    }
+                    bombs.splice(index, 1);
+}
+            });
+        }
+        
+        // Update enemies
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                // Move enemy
+                enemy.y += settings.enemySpeed;
+                enemy.element.style.top = enemy.y + 'px';
+                
+                // Update enemy position in array
+                enemy.x = parseFloat(enemy.element.style.left);
+                enemy.y = parseFloat(enemy.element.style.top);
+                
+                // Enemy shooting
+                if (Math.random() < settings.enemyShootChance) {
+                    spawnEnemyBullet(enemy);
+                }
+                
+                // Remove enemy if it's off screen
+                if (enemy.y > gameContainer.clientHeight) {
+                    if (enemy.element.parentNode) {
+                        enemy.element.parentNode.removeChild(enemy.element);
+                    }
+                    enemies.splice(index, 1);
+                }
+            });
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Update player
+            updatePlayerPosition();
+            
+            // Update game objects
+            updateMissiles();
+            updateBombs();
+            updateEnemies();
+            
+            // Check collisions
+            checkCollisions();
+            
+            // Continue game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // End game
+        function endGame() {
+            gameRunning = false;
+            
+            // Stop spawners
+            clearInterval(enemySpawnTimer);
+            clearInterval(powerupSpawnTimer);
+            
+            // Stop background music
+            if (soundEnabled) {
+                sounds.background.pause();
+                sounds.gameOver.play();
+            }
+            
+            // Update final score
+            finalScoreElement.textContent = score;
+            
+            // Show game over screen
+            gameOverScreen.style.display = 'flex';
+        }
+// Keyboard event listeners
+        document.addEventListener('keydown', function(e) {
+            if (!gameRunning) {
+                // Start game with Enter
+                if (e.key === 'Enter' && startScreen.style.display !== 'none') {
+                    initGame();
+                    return;
+                }
+                return;
+            }
+            
+            // Movement
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                    keys.up = true;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    keys.down = true;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    keys.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keys.right = true;
+                    break;
+                // Actions
+                case ' ': // Space
+                    fireMissile();
+                    break;
+                case 'b':
+                case 'B':
+                    dropBomb();
+                    break;
+                case 't':
+                case 'T':
+                    transformPlayer();
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            // Movement
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                    keys.up = false;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    keys.down = false;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    keys.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keys.right = false;
+                    break;
+            }
+        });
+// Gamepad support
+        window.addEventListener("gamepadconnected", function(e) {
+            console.log("Gamepad connected: " + e.gamepad.id);
+            
+            // Start gamepad polling
+            requestAnimationFrame(pollGamepad);
+        });
+        
+        function pollGamepad() {
+            // If game not running, check for start button
+            if (!gameRunning && startScreen.style.display !== 'none') {
+                const gamepads = navigator.getGamepads();
+                
+                for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    
+                    if (gamepad) {
+                        // Start button
+                        if (gamepad.buttons[9] && gamepad.buttons[9].pressed) {
+                            initGame();
+                            break;
+                        }
+                    }
+                }
+                
+                requestAnimationFrame(pollGamepad);
+                return;
+            }
+            
+            // If game over, check for restart
+            if (!gameRunning && gameOverScreen.style.display === 'flex') {
+                const gamepads = navigator.getGamepads();
+                
+                for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    
+                    if (gamepad) {
+                        // Start button
+                        if (gamepad.buttons[9] && gamepad.buttons[9].pressed) {
+                            gameOverScreen.style.display = 'none';
+                            initGame();
+                            break;
+                        }
+                    }
+                }
+                
+                requestAnimationFrame(pollGamepad);
+                return;
+            }
+            
+            // Game running - check gamepad controls
+            if (gameRunning) {
+                const gamepads = navigator.getGamepads();
+                
+                for (let i = 0; i < gamepads.length; i++) {
+                    const gamepad = gamepads[i];
+                    
+                    if (gamepad) {
+                        // D-pad movement
+                        keys.up = gamepad.buttons[12] && gamepad.buttons[12].pressed;
+                        keys.down = gamepad.buttons[13] && gamepad.buttons[13].pressed;
+                        keys.left = gamepad.buttons[14] && gamepad.buttons[14].pressed;
+                        keys.right = gamepad.buttons[15] && gamepad.buttons[15].pressed;
+                        
+                        // Left Bumper - Fire missile (button 200)
+                        if (gamepad.buttons[4] && gamepad.buttons[4].pressed) {
+                            fireMissile();
+                        }
+                        
+                        // Right Bumper - Drop bomb (button 199)
+                        if (gamepad.buttons[5] && gamepad.buttons[5].pressed) {
+                            dropBomb();
+                        }
+                        
+                        // Copy Button - Transform (button 208)
+                        if (gamepad.buttons[3] && gamepad.buttons[3].pressed) {
+                            transformPlayer();
+                        }
+                    }
+                }
+            }
+            
+            // Continue polling
+            requestAnimationFrame(pollGamepad);
+        }
+        
+        // Start button event listener
+        startButton.addEventListener('click', initGame);
+        
+        // Restart button event listener
+        restartButton.addEventListener('click', function() {
+            gameOverScreen.style.display = 'none';
+            initGame();
+        });
+        
+        // Sound toggle button
+        soundToggle.addEventListener('click', function() {
+            soundEnabled = !soundEnabled;
+            
+            if (soundEnabled) {
+                soundToggle.textContent = '🔊 Sound & Music: ON';
+                if (gameRunning) {
+                    sounds.background.play();
+                }
+            } else {
+                soundToggle.textContent = '🔇 Sound & Music: OFF';
+                sounds.background.pause();
+            }
+        });
+    </script>
+</body>
+</html>
